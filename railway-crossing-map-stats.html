@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script>
+(function(){
+  var ok = false;
+  try { ok = sessionStorage.getItem('railway-auth') === '1'; } catch(e){}
+  if (!ok) { window.location.replace('login.html?redirect=railway-crossing-map-stats.html'); }
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>แผนที่สถิติเหตุอันตรายจุดตัดทางรถไฟ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root{
+    --steel-900:#FAF3E4;
+    --steel-800:#FFFBF3;
+    --steel-700:#F1E3D3;
+    --steel-600:#E0C9AC;
+    --steel-line:#C9A97E;
+    --paper:#3A2419;
+    --paper-dim:#8A6B4E;
+    --amber:#A67C10;
+    --amber-dim:#7A5B0C;
+    --cyan:#7A1F2B;
+    --cyan-dim:#F6DFE1;
+    --sev-none:#D8C7A8;
+    --sev-low:#3E7A4A;
+    --sev-mid:#D1A227;
+    --sev-high:#B23A3A;
+    --status-text-neg:#5C1620;
+    --deco-stroke:#7A1F2B;
+    --deco-opacity:.22;
+    --radius:10px;
+  }
+  html[data-theme="dark"]{
+    --steel-900:#1B1310;
+    --steel-800:#26190F;
+    --steel-700:#372316;
+    --steel-600:#513521;
+    --steel-line:#63432A;
+    --paper:#F3E7D3;
+    --paper-dim:#C6A87D;
+    --amber:#D1A227;
+    --amber-dim:#8C6A16;
+    --cyan:#C2812E;
+    --cyan-dim:#5C3712;
+    --sev-none:#513521;
+    --sev-low:#3E6B47;
+    --sev-mid:#D1A227;
+    --sev-high:#A32E2E;
+    --status-text-neg:#d7f5f2;
+    --deco-stroke:var(--amber);
+    --deco-opacity:.16;
+  }
+  .theme-toggle{
+    position:fixed;top:14px;right:14px;z-index:80;
+    width:42px;height:42px;border-radius:50%;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    color:var(--paper);font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--steel-900);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:0 0 64px;}
+  header{padding:24px 18px 0;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--cyan);margin:0 0 6px;display:flex;align-items:center;
+  }
+  .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--cyan);
+    box-shadow:0 0 6px var(--cyan);margin-right:6px;}
+  h1{font-family:'Oswald',sans-serif;font-weight:700;font-size:22px;letter-spacing:.01em;
+     text-transform:uppercase;margin:0 0 4px;color:var(--paper);}
+  .sub{font-size:12.5px;color:var(--paper-dim);margin:0;}
+
+  main{padding:16px 18px 0;}
+  .card{background:var(--steel-800);border:1px solid var(--steel-line);border-radius:12px;
+        padding:14px;margin-bottom:12px;}
+  .card h2{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;text-transform:uppercase;
+           letter-spacing:.05em;margin:0 0 10px;color:var(--paper-dim);}
+
+  .range-tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+  .range-tab{
+    flex:1;min-width:70px;text-align:center;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;
+    padding:9px 6px;border-radius:8px;border:1px solid var(--steel-line);background:var(--steel-700);
+    color:var(--paper-dim);cursor:pointer;
+  }
+  .range-tab.active{background:var(--cyan-dim);border-color:var(--cyan);color:var(--status-text-neg);}
+  .range-label{font-size:11.5px;color:var(--paper-dim);text-align:center;margin-bottom:12px;font-family:'JetBrains Mono',monospace;}
+
+  .region-select{
+    width:100%;background:var(--steel-700);border:1px solid var(--steel-line);color:var(--paper);
+    border-radius:8px;padding:9px 10px;font-size:13px;font-family:'Inter',sans-serif;
+  }
+
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--paper-dim);margin-top:10px;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+  .stat-card{background:var(--steel-800);border:1px solid var(--steel-line);border-radius:12px;
+             padding:12px 8px;text-align:center;}
+  .stat-card .num{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:700;color:var(--cyan);}
+  .stat-card .lbl{font-size:10.5px;color:var(--paper-dim);margin-top:2px;}
+
+  .map-wrap{width:100%;background:var(--steel-700);border-radius:10px;overflow:hidden;position:relative;}
+  .map-wrap svg{width:100%;height:auto;display:block;}
+  .province-path{stroke:var(--steel-900);stroke-width:.6;cursor:pointer;transition:opacity .12s;}
+  .province-path:hover{opacity:.75;}
+  .province-path.dimmed{opacity:.18;pointer-events:none;}
+  .map-msg{padding:30px 16px;text-align:center;color:var(--paper-dim);font-size:13px;}
+
+  .toplist{margin-top:2px;}
+  .top-row{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--steel-700);cursor:pointer;}
+  .top-row:hover{background:var(--steel-700);}
+  .top-row .dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .top-row .pname{flex:1;font-size:13px;}
+  .top-row .pcount{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--paper-dim);}
+
+  .btn-row{display:flex;gap:8px;margin-top:12px;}
+  .btn{
+    flex:1;background:var(--steel-700);border:1px solid var(--steel-line);color:var(--paper);
+    border-radius:8px;padding:10px;font-size:12.5px;font-weight:600;cursor:pointer;text-align:center;
+    font-family:'Inter',sans-serif;
+  }
+  .btn.primary{background:var(--cyan-dim);border-color:var(--cyan);color:var(--status-text-neg);}
+
+  .empty{color:var(--paper-dim);font-size:13px;text-align:center;padding:20px 10px;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+
+  /* province detail panel */
+  #detailOverlay{
+    display:none;position:fixed;inset:0;background:rgba(10,12,13,.88);z-index:60;
+    align-items:flex-end;justify-content:center;
+  }
+  @media (min-width:600px){ #detailOverlay{align-items:center;} }
+  #detailPanel{
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    border-radius:16px 16px 0 0;padding:18px;width:100%;max-width:600px;
+    max-height:88vh;overflow-y:auto;
+  }
+  @media (min-width:600px){ #detailPanel{border-radius:14px;} }
+  .detail-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
+  .detail-head h3{font-family:'Oswald',sans-serif;font-size:19px;text-transform:uppercase;margin:0;}
+  .detail-close{background:none;border:none;color:var(--paper-dim);font-size:20px;cursor:pointer;line-height:1;}
+  .detail-region{font-size:12px;color:var(--paper-dim);margin-bottom:14px;}
+  .detail-stat-row{display:flex;gap:8px;margin-bottom:14px;}
+  .detail-stat{flex:1;background:var(--steel-700);border-radius:8px;padding:10px;text-align:center;}
+  .detail-stat .n{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--amber);}
+  .detail-stat .l{font-size:10.5px;color:var(--paper-dim);}
+
+  .incident-card{
+    background:var(--steel-700);border:1px solid var(--steel-line);border-radius:10px;
+    padding:12px;margin-bottom:10px;
+  }
+  .incident-card .row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .badge{
+    display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    padding:2px 8px;border-radius:20px;background:var(--steel-800);color:var(--amber);
+    border:1px solid var(--amber-dim);white-space:nowrap;
+  }
+  .incident-note{font-size:13px;line-height:1.55;color:var(--paper);margin-bottom:8px;white-space:pre-wrap;}
+  .incident-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:11.5px;color:var(--paper-dim);}
+  .incident-meta a{color:var(--cyan);text-decoration:none;}
+  .incident-photo{width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-top:8px;display:block;border:1px solid var(--steel-line);}
+
+  @media (max-width:380px){
+    .stat-grid{grid-template-columns:1fr 1fr;}
+    .range-tabs{gap:5px;}
+  }
+
+  .rail-deco{
+    position:fixed;
+    top:0; bottom:0;
+    width:260px;
+    pointer-events:none;
+    z-index:0;
+    opacity:var(--deco-opacity);
+    display:none;
+  }
+  .rail-deco.left{ left:0; }
+  .rail-deco.right{ right:0; }
+  .rail-deco svg{ width:100%; height:100%; }
+  @media (min-width:1180px){
+    .rail-deco{ display:block; }
+  }
+  .wrap{ position:relative; z-index:1; }
+  .train-nav{ position:fixed; left:16px; bottom:16px; z-index:90; }
+  .train-nav-btn{
+    width:56px;height:56px;border-radius:50%;
+    background:var(--steel-800);border:2px solid var(--red);
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.18);
+    animation:trainBob 2.6s ease-in-out infinite;
+  }
+  @keyframes trainBob{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    50%{ transform:translateY(-4px) rotate(-4deg); }
+  }
+  .train-menu{
+    display:none;position:absolute;bottom:66px;left:0;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    border-radius:12px;padding:8px;min-width:190px;
+    box-shadow:0 6px 18px rgba(0,0,0,.2);
+  }
+  .train-menu.open{ display:block; }
+  .train-menu a{
+    display:flex;align-items:center;gap:9px;
+    padding:9px 10px;border-radius:8px;text-decoration:none;
+    color:var(--paper);font-size:13px;font-family:'Inter',sans-serif;
+  }
+  .train-menu a:hover{ background:var(--steel-700); }
+  .train-menu a.current{ color:var(--red);font-weight:600; }
+  .train-menu .emoji{ font-size:16px; }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="สลับโหมดกลางวัน/กลางคืน">☀️</button>
+
+<div class="train-nav">
+  <div class="train-menu" id="trainMenu">
+    <a href="index.html" data-page="index"><span class="emoji">📝</span> แจ้งเหตุ</a>
+    <a href="railway-crossing-stats.html" data-page="stats"><span class="emoji">📊</span> สถิติ</a>
+    <a href="railway-crossing-map-stats.html" data-page="map"><span class="emoji">🗺️</span> แผนที่สถิติ</a>
+    <a href="login-logs.html" data-page="logs"><span class="emoji">🔐</span> ประวัติการเข้าสู่ระบบ</a>
+  </div>
+  <button class="train-nav-btn" id="trainNavBtn" type="button" aria-label="เมนู">🚂</button>
+</div>
+
+
+<div class="rail-deco left" aria-hidden="true">
+  <svg viewBox="0 0 260 900" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="var(--deco-stroke)" stroke-width="2">
+    <!-- simplified Thailand outline, decorative only -->
+    <path d="M150 90
+      C 140 70, 118 65, 108 78
+      C 96 92, 100 112, 92 126
+      C 80 146, 60 150, 58 172
+      C 56 196, 76 206, 80 228
+      C 84 252, 66 264, 70 290
+      C 74 316, 100 322, 104 348
+      C 108 374, 90 388, 96 414
+      C 100 432, 118 438, 122 458
+      C 126 480, 110 492, 116 516
+      C 121 538, 140 540, 143 562
+      C 146 584, 132 596, 138 618
+      C 143 636, 160 640, 162 660
+      C 164 682, 150 692, 154 712
+      C 157 728, 172 732, 172 748
+      C 172 762, 160 768, 160 780"
+      stroke-opacity=".55" stroke-width="2.4"/>
+    <!-- rail track running down the side -->
+    <line x1="40" y1="820" x2="40" y2="900" stroke="var(--paper-dim)" stroke-width="2"/>
+    <line x1="56" y1="820" x2="56" y2="900" stroke="var(--paper-dim)" stroke-width="2"/>
+    <g stroke="var(--paper-dim)" stroke-width="2">
+      <line x1="30" y1="828" x2="66" y2="828"/>
+      <line x1="30" y1="844" x2="66" y2="844"/>
+      <line x1="30" y1="860" x2="66" y2="860"/>
+      <line x1="30" y1="876" x2="66" y2="876"/>
+      <line x1="30" y1="892" x2="66" y2="892"/>
+    </g>
+  </svg>
+</div>
+
+<div class="rail-deco right" aria-hidden="true">
+  <svg viewBox="0 0 260 340" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="var(--deco-stroke)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- line-art steam locomotive, side profile -->
+    <g transform="translate(10,140)">
+      <!-- smoke curls -->
+      <path d="M40 -6 C 34 -16, 44 -22, 38 -32 C 32 -42, 44 -46, 40 -56" stroke-opacity=".6"/>
+      <path d="M54 -2 C 50 -12, 58 -16, 54 -26" stroke-opacity=".4"/>
+      <!-- chimney -->
+      <rect x="32" y="-2" width="16" height="26" rx="3"/>
+      <!-- boiler -->
+      <rect x="18" y="24" width="150" height="46" rx="20"/>
+      <!-- dome -->
+      <path d="M70 24 q10 -16 24 0" />
+      <!-- cab -->
+      <path d="M168 24 h34 v46 h-56 v-24 q0 -22 22 -22 z"/>
+      <!-- cab window -->
+      <rect x="182" y="34" width="16" height="14" rx="2"/>
+      <!-- cow-catcher / pilot -->
+      <path d="M18 70 l-16 26 h34 l6 -26 z"/>
+      <!-- footplate line -->
+      <line x1="8" y1="96" x2="210" y2="96"/>
+      <!-- wheels -->
+      <circle cx="46" cy="96" r="22"/>
+      <circle cx="46" cy="96" r="5"/>
+      <circle cx="104" cy="104" r="30"/>
+      <circle cx="104" cy="104" r="6"/>
+      <circle cx="168" cy="96" r="22"/>
+      <circle cx="168" cy="96" r="5"/>
+      <!-- connecting rod -->
+      <line x1="46" y1="96" x2="168" y2="96" stroke-opacity=".7"/>
+      <!-- rail line under wheels -->
+      <line x1="-10" y1="134" x2="230" y2="134" stroke="var(--paper-dim)" stroke-width="2"/>
+      <g stroke="var(--paper-dim)" stroke-width="2">
+        <line x1="0" y1="134" x2="0" y2="146"/>
+        <line x1="30" y1="134" x2="30" y2="146"/>
+        <line x1="60" y1="134" x2="60" y2="146"/>
+        <line x1="90" y1="134" x2="90" y2="146"/>
+        <line x1="120" y1="134" x2="120" y2="146"/>
+        <line x1="150" y1="134" x2="150" y2="146"/>
+        <line x1="180" y1="134" x2="180" y2="146"/>
+        <line x1="210" y1="134" x2="210" y2="146"/>
+      </g>
+    </g>
+  </svg>
+</div>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow"><span class="live-dot"></span>Level crossing safety network</p>
+    <h1>แผนที่สถิติเหตุอันตรายทั่วประเทศ</h1>
+    <p class="sub">รวมข้อมูลจากหน้าแจ้งเหตุและหน้าสถิติ แบ่งตามภาค/จังหวัด พร้อมรายละเอียดครบทุกรายการ</p>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>ช่วงเวลาที่ต้องการดู</h2>
+      <div class="range-tabs" id="rangeTabs">
+        <button class="range-tab" data-range="today">วันนี้</button>
+        <button class="range-tab active" data-range="7d">7 วัน</button>
+        <button class="range-tab" data-range="30d">30 วัน</button>
+        <button class="range-tab" data-range="all">ทั้งหมด</button>
+      </div>
+      <div class="range-label" id="rangeLabel"></div>
+
+      <h2 style="margin-top:4px;">กรองตามภาค</h2>
+      <select class="region-select" id="regionSelect">
+        <option value="all">ทั้งประเทศ</option>
+        <option value="north">ภาคเหนือ</option>
+        <option value="northeast">ภาคตะวันออกเฉียงเหนือ</option>
+        <option value="central">ภาคกลาง</option>
+        <option value="east">ภาคตะวันออก</option>
+        <option value="west">ภาคตะวันตก</option>
+        <option value="south">ภาคใต้</option>
+      </select>
+
+      <div class="legend">
+        <span><i style="background:var(--sev-none);"></i>ไม่มีข้อมูล</span>
+        <span><i style="background:var(--sev-low);"></i>น้อย (1–2)</span>
+        <span><i style="background:var(--sev-mid);"></i>ปานกลาง (3–5)</span>
+        <span><i style="background:var(--sev-high);"></i>มาก (6+)</span>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">เหตุในช่วงที่เลือก</div></div>
+      <div class="stat-card"><div class="num" id="statProvinces">0</div><div class="lbl">จังหวัดที่มีเหตุ</div></div>
+      <div class="stat-card"><div class="num" id="statUnmapped">0</div><div class="lbl">ไม่ระบุตำแหน่ง</div></div>
+    </div>
+
+    <div class="card">
+      <h2>แผนที่ความถี่เหตุรายจังหวัด</h2>
+      <div class="map-wrap" id="mapWrap">
+        <div class="map-msg" id="mapMsg">กำลังโหลดแผนที่...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>อันดับจังหวัดที่มีเหตุมากที่สุด</h2>
+      <div class="toplist" id="topList"><div class="empty">ยังไม่มีข้อมูล</div></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn primary" id="downloadAllBtn">ดาวน์โหลดข้อมูลช่วงนี้ (CSV)</button>
+    </div>
+  </main>
+</div>
+
+<div id="detailOverlay">
+  <div id="detailPanel">
+    <div class="detail-head">
+      <h3 id="detailTitle">-</h3>
+      <button class="detail-close" id="detailClose">✕</button>
+    </div>
+    <div class="detail-region" id="detailRegionText"></div>
+    <div class="detail-stat-row">
+      <div class="detail-stat"><div class="n" id="detailCount">0</div><div class="l">เหตุในช่วงนี้</div></div>
+      <div class="detail-stat"><div class="n" id="detailTypesCount">0</div><div class="l">ประเภทที่พบ</div></div>
+    </div>
+    <button class="btn primary" id="detailDownloadBtn" style="width:100%;margin-bottom:14px;">ดาวน์โหลดข้อมูลจังหวัดนี้ (CSV)</button>
+    <div id="detailIncidents"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- day/night theme toggle ---------- */
+  var THEME_KEY = 'railway-theme';
+  var toggleBtn = document.getElementById('themeToggle');
+  var themeReady = false;
+  function applyTheme(mode){
+    if (mode === 'dark'){
+      document.documentElement.setAttribute('data-theme', 'dark');
+      toggleBtn.textContent = '🌙';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      toggleBtn.textContent = '☀️';
+    }
+    if (themeReady) renderAll();
+  }
+  var saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+  applyTheme(saved === 'dark' ? 'dark' : 'light');
+  toggleBtn.addEventListener('click', function(){
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var next = isDark ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem(THEME_KEY, next); } catch(e){}
+  });
+
+  /* ---------- floating train nav ---------- */
+  (function(){
+    var trainBtn = document.getElementById('trainNavBtn');
+    var trainMenu = document.getElementById('trainMenu');
+    trainBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      trainMenu.classList.toggle('open');
+    });
+    document.addEventListener('click', function(e){
+      if (!trainMenu.contains(e.target) && e.target !== trainBtn) trainMenu.classList.remove('open');
+    });
+    var link = trainMenu.querySelector('[data-page="map"]');
+    if (link) link.classList.add('current');
+  })();
+
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzq_lB981Yq4JZKKMMy5olDkf3xIaJgoZODZrWs7PwGB0r0t7YvtPQEmNVfxHCa9rb85g/exec';
+  var GEOJSON_URL = 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json';
+
+  var REGION_LABEL = {
+    all:'ทั้งประเทศ', north:'ภาคเหนือ', northeast:'ภาคตะวันออกเฉียงเหนือ',
+    central:'ภาคกลาง', east:'ภาคตะวันออก', west:'ภาคตะวันตก', south:'ภาคใต้'
+  };
+
+  function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z]/g,''); }
+
+  // English-name-key -> {th, region}
+  var RAW_PROVINCES = [
+    ['Bangkok','กรุงเทพมหานคร','central',['krungthep','krungthepmahanakhon']],
+    ['Nonthaburi','นนทบุรี','central'],
+    ['Pathum Thani','ปทุมธานี','central'],
+    ['Samut Prakan','สมุทรปราการ','central'],
+    ['Nakhon Pathom','นครปฐม','central'],
+    ['Samut Sakhon','สมุทรสาคร','central'],
+    ['Samut Songkhram','สมุทรสงคราม','central'],
+    ['Phra Nakhon Si Ayutthaya','พระนครศรีอยุธยา','central',['ayutthaya']],
+    ['Ang Thong','อ่างทอง','central'],
+    ['Suphan Buri','สุพรรณบุรี','central',['suphanburi']],
+    ['Lop Buri','ลพบุรี','central',['lopburi']],
+    ['Saraburi','สระบุรี','central'],
+    ['Sing Buri','สิงห์บุรี','central',['singburi']],
+    ['Chai Nat','ชัยนาท','central',['chainat']],
+    ['Nakhon Nayok','นครนายก','central'],
+    ['Chon Buri','ชลบุรี','east',['chonburi']],
+    ['Rayong','ระยอง','east'],
+    ['Chanthaburi','จันทบุรี','east'],
+    ['Trat','ตราด','east'],
+    ['Chachoengsao','ฉะเชิงเทรา','east'],
+    ['Prachin Buri','ปราจีนบุรี','east',['prachinburi']],
+    ['Sa Kaeo','สระแก้ว','east',['sakaeo','sakeo']],
+    ['Kanchanaburi','กาญจนบุรี','west'],
+    ['Ratchaburi','ราชบุรี','west'],
+    ['Phetchaburi','เพชรบุรี','west'],
+    ['Prachuap Khiri Khan','ประจวบคีรีขันธ์','west',['prachuap']],
+    ['Chiang Mai','เชียงใหม่','north'],
+    ['Chiang Rai','เชียงราย','north'],
+    ['Lamphun','ลำพูน','north'],
+    ['Lampang','ลำปาง','north'],
+    ['Phrae','แพร่','north'],
+    ['Nan','น่าน','north'],
+    ['Phayao','พะเยา','north'],
+    ['Mae Hong Son','แม่ฮ่องสอน','north'],
+    ['Uttaradit','อุตรดิตถ์','north'],
+    ['Sukhothai','สุโขทัย','north'],
+    ['Tak','ตาก','north'],
+    ['Kamphaeng Phet','กำแพงเพชร','north'],
+    ['Phichit','พิจิตร','north'],
+    ['Phitsanulok','พิษณุโลก','north'],
+    ['Phetchabun','เพชรบูรณ์','north'],
+    ['Nakhon Sawan','นครสวรรค์','north'],
+    ['Uthai Thani','อุทัยธานี','north'],
+    ['Nakhon Ratchasima','นครราชสีมา','northeast'],
+    ['Buri Ram','บุรีรัมย์','northeast',['buriram']],
+    ['Surin','สุรินทร์','northeast'],
+    ['Si Sa Ket','ศรีสะเกษ','northeast',['sisaket','srisaket']],
+    ['Ubon Ratchathani','อุบลราชธานี','northeast'],
+    ['Yasothon','ยโสธร','northeast'],
+    ['Chaiyaphum','ชัยภูมิ','northeast'],
+    ['Amnat Charoen','อำนาจเจริญ','northeast'],
+    ['Nong Bua Lam Phu','หนองบัวลำภู','northeast',['nongbualamphu','nongbualumphu']],
+    ['Khon Kaen','ขอนแก่น','northeast'],
+    ['Udon Thani','อุดรธานี','northeast'],
+    ['Loei','เลย','northeast'],
+    ['Nong Khai','หนองคาย','northeast'],
+    ['Maha Sarakham','มหาสารคาม','northeast'],
+    ['Roi Et','ร้อยเอ็ด','northeast'],
+    ['Kalasin','กาฬสินธุ์','northeast'],
+    ['Sakon Nakhon','สกลนคร','northeast'],
+    ['Nakhon Phanom','นครพนม','northeast'],
+    ['Mukdahan','มุกดาหาร','northeast'],
+    ['Bueng Kan','บึงกาฬ','northeast',['buengkan','buogkan']],
+    ['Chumphon','ชุมพร','south'],
+    ['Ranong','ระนอง','south'],
+    ['Surat Thani','สุราษฎร์ธานี','south'],
+    ['Phang Nga','พังงา','south'],
+    ['Phuket','ภูเก็ต','south'],
+    ['Krabi','กระบี่','south'],
+    ['Nakhon Si Thammarat','นครศรีธรรมราช','south'],
+    ['Trang','ตรัง','south'],
+    ['Phatthalung','พัทลุง','south'],
+    ['Satun','สตูล','south'],
+    ['Songkhla','สงขลา','south'],
+    ['Pattani','ปัตตานี','south'],
+    ['Yala','ยะลา','south'],
+    ['Narathiwat','นราธิวาส','south']
+  ];
+
+  var PROVINCE_LOOKUP = {};
+  RAW_PROVINCES.forEach(function(row){
+    var en = row[0], th = row[1], region = row[2], aliases = row[3] || [];
+    var entry = {en: en, th: th, region: region};
+    PROVINCE_LOOKUP[norm(en)] = entry;
+    aliases.forEach(function(a){ PROVINCE_LOOKUP[norm(a)] = entry; });
+  });
+
+  var incidents = [];
+  var geoData = null;
+  var geoLoadFailed = false;
+  var provinceCounts = {}; // th name -> filtered incidents array
+  var currentRange = '7d';
+  var currentRegion = 'all';
+
+  function toDriveThumb(url){
+    if (!url) return url;
+    var m = /[?&]id=([^&]+)/.exec(url);
+    return m ? ('https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w1000') : url;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  /* ---------- point in polygon ---------- */
+  function pointInRing(pt, ring){
+    var x = pt[0], y = pt[1], inside = false;
+    for (var i=0,j=ring.length-1; i<ring.length; j=i++){
+      var xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
+      var intersect = ((yi>y) !== (yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+  function pointInPolygon(pt, poly){
+    if (!pointInRing(pt, poly[0])) return false;
+    for (var k=1;k<poly.length;k++){ if (pointInRing(pt, poly[k])) return false; }
+    return true;
+  }
+  function pointInGeometry(pt, geom){
+    if (!geom) return false;
+    if (geom.type === 'Polygon') return pointInPolygon(pt, geom.coordinates);
+    if (geom.type === 'MultiPolygon') return geom.coordinates.some(function(p){ return pointInPolygon(pt, p); });
+    return false;
+  }
+
+  /* ---------- data loading ---------- */
+  async function loadIncidents(){
+    try{
+      var resp = await fetch(SCRIPT_URL, { method:'GET' });
+      var data = await resp.json();
+      incidents = Array.isArray(data) ? data : [];
+    }catch(e){ incidents = []; }
+  }
+
+  async function loadGeo(){
+    try{
+      var resp = await fetch(GEOJSON_URL);
+      geoData = await resp.json();
+      geoData.features.forEach(function(f){
+        var key = norm(f.properties && f.properties.name);
+        var match = PROVINCE_LOOKUP[key];
+        f.properties._th = match ? match.th : (f.properties.name || 'ไม่ทราบชื่อ');
+        f.properties._region = match ? match.region : 'central';
+      });
+    }catch(e){
+      geoLoadFailed = true;
+    }
+  }
+
+  function assignProvince(incident){
+    if (incident._province !== undefined) return incident._province;
+    var gps = incident.gps;
+    if (!gps || typeof gps !== 'string' || gps.indexOf(',') === -1){ incident._province = null; return null; }
+    var parts = gps.split(',');
+    var lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
+    if (isNaN(lat) || isNaN(lng)){ incident._province = null; return null; }
+    incident._lat = lat; incident._lng = lng;
+    if (!geoData){ incident._province = null; return null; }
+    var pt = [lng, lat];
+    for (var i=0;i<geoData.features.length;i++){
+      var f = geoData.features[i];
+      if (pointInGeometry(pt, f.geometry)){
+        incident._province = f.properties._th;
+        incident._region = f.properties._region;
+        return incident._province;
+      }
+    }
+    incident._province = null;
+    return null;
+  }
+
+  /* ---------- time range ---------- */
+  function withinRange(ts, rangeKey){
+    var d = new Date(ts), now = new Date();
+    if (isNaN(d.getTime())) return false;
+    if (rangeKey === 'today'){
+      return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && d.getDate()===now.getDate();
+    }
+    if (rangeKey === '7d') return (now - d) <= 7*86400000;
+    if (rangeKey === '30d') return (now - d) <= 30*86400000;
+    return true;
+  }
+
+  function fmtDate(d){ return d.toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'numeric'}); }
+  function rangeLabelText(rangeKey){
+    var now = new Date();
+    if (rangeKey === 'today') return 'แสดงข้อมูลของวันที่ ' + fmtDate(now);
+    if (rangeKey === '7d') return 'แสดงข้อมูลตั้งแต่ ' + fmtDate(new Date(now-7*86400000)) + ' – ' + fmtDate(now);
+    if (rangeKey === '30d') return 'แสดงข้อมูลตั้งแต่ ' + fmtDate(new Date(now-30*86400000)) + ' – ' + fmtDate(now);
+    return 'แสดงข้อมูลทั้งหมดที่มีการบันทึกไว้ในระบบ';
+  }
+
+  function severityColor(count){
+    if (!count || count <= 0) return getVar('--sev-none');
+    if (count <= 2) return getVar('--sev-low');
+    if (count <= 5) return getVar('--sev-mid');
+    return getVar('--sev-high');
+  }
+  function getVar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  /* ---------- aggregation ---------- */
+  function getFilteredIncidents(){
+    return incidents.filter(function(i){ return withinRange(i.timestamp, currentRange); });
+  }
+
+  function computeProvinceCounts(filtered){
+    var map = {};
+    filtered.forEach(function(i){
+      var prov = assignProvince(i);
+      if (!prov) return;
+      if (currentRegion !== 'all' && i._region !== currentRegion) return;
+      if (!map[prov]) map[prov] = [];
+      map[prov].push(i);
+    });
+    return map;
+  }
+
+  /* ---------- rendering ---------- */
+  function renderRangeUI(){
+    document.querySelectorAll('.range-tab').forEach(function(t){
+      t.classList.toggle('active', t.dataset.range === currentRange);
+    });
+    document.getElementById('rangeLabel').textContent = rangeLabelText(currentRange);
+  }
+
+  function renderSummary(filtered, mapped){
+    document.getElementById('statTotal').textContent = filtered.length;
+    document.getElementById('statProvinces').textContent = Object.keys(mapped).length;
+    var unmapped = filtered.filter(function(i){ return !assignProvince(i); }).length;
+    document.getElementById('statUnmapped').textContent = unmapped;
+  }
+
+  function renderTopList(mapped){
+    var el = document.getElementById('topList');
+    var pairs = Object.keys(mapped).map(function(k){ return [k, mapped[k].length]; })
+      .sort(function(a,b){ return b[1]-a[1]; });
+    if (!pairs.length){
+      el.innerHTML = '<div class="empty">ไม่พบเหตุที่ระบุตำแหน่งในช่วงเวลา/ภาคที่เลือก</div>';
+      return;
+    }
+    el.innerHTML = pairs.slice(0,15).map(function(p){
+      var color = severityColor(p[1]);
+      return '<div class="top-row" data-province="' + escapeHtml(p[0]) + '">'
+        + '<span class="dot" style="background:' + color + '"></span>'
+        + '<span class="pname">' + escapeHtml(p[0]) + '</span>'
+        + '<span class="pcount">' + p[1] + '</span>'
+        + '</div>';
+    }).join('');
+    el.querySelectorAll('.top-row').forEach(function(row){
+      row.addEventListener('click', function(){ openProvinceDetail(row.dataset.province, mapped[row.dataset.province] || []); });
+    });
+  }
+
+  function renderMap(mapped){
+    var wrap = document.getElementById('mapWrap');
+    if (geoLoadFailed || !geoData){
+      wrap.innerHTML = '<div class="map-msg">โหลดแผนที่ไม่สำเร็จ (ต้องเชื่อมต่ออินเทอร์เน็ต) — ใช้อันดับจังหวัดด้านล่างแทนได้</div>';
+      return;
+    }
+    var width = 640, height = 640;
+    wrap.innerHTML = '';
+    var svg = d3.select(wrap).append('svg').attr('viewBox', '0 0 ' + width + ' ' + height);
+    var projection = d3.geoMercator().fitSize([width, height], geoData);
+    var path = d3.geoPath().projection(projection);
+
+    svg.selectAll('path')
+      .data(geoData.features)
+      .enter()
+      .append('path')
+      .attr('class', function(f){
+        var dim = currentRegion !== 'all' && f.properties._region !== currentRegion;
+        return 'province-path' + (dim ? ' dimmed' : '');
+      })
+      .attr('d', path)
+      .attr('fill', function(f){
+        var count = (mapped[f.properties._th] || []).length;
+        return severityColor(count);
+      })
+      .on('click', function(event, f){
+        var list = mapped[f.properties._th] || [];
+        openProvinceDetail(f.properties._th, list);
+      })
+      .append('title')
+      .text(function(f){
+        var count = (mapped[f.properties._th] || []).length;
+        return f.properties._th + ': ' + count + ' เหตุ';
+      });
+  }
+
+  function renderAll(){
+    renderRangeUI();
+    document.getElementById('regionSelect').value = currentRegion;
+    var filtered = getFilteredIncidents();
+    var mapped = computeProvinceCounts(filtered);
+    provinceCounts = mapped;
+    renderSummary(filtered, mapped);
+    renderTopList(mapped);
+    renderMap(mapped);
+  }
+
+  /* ---------- province detail panel ---------- */
+  function openProvinceDetail(provinceName, list){
+    document.getElementById('detailTitle').textContent = provinceName;
+    document.getElementById('detailRegionText').textContent = REGION_LABEL[
+      (list[0] && list[0]._region) || guessRegionByProvince(provinceName) || 'central'
+    ] || '';
+    document.getElementById('detailCount').textContent = list.length;
+    var types = {};
+    list.forEach(function(i){ types[i.type || 'อื่นๆ'] = true; });
+    document.getElementById('detailTypesCount').textContent = Object.keys(types).length;
+
+    var sorted = list.slice().sort(function(a,b){ return new Date(b.timestamp) - new Date(a.timestamp); });
+    var container = document.getElementById('detailIncidents');
+    if (!sorted.length){
+      container.innerHTML = '<div class="empty">ไม่มีรายการในช่วงเวลานี้</div>';
+    } else {
+      container.innerHTML = sorted.map(function(i){
+        var d = new Date(i.timestamp);
+        var timeStr = isNaN(d.getTime()) ? '-' : d.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'})
+          + ' ' + d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+        var gpsLink = '';
+        if (i._lat && i._lng){
+          gpsLink = '<a href="https://maps.google.com/?q=' + i._lat + ',' + i._lng + '" target="_blank" rel="noopener">เปิดใน Google Maps</a>';
+        }
+        var photoHtml = i.photoUrl
+          ? '<img class="incident-photo" src="' + escapeHtml(toDriveThumb(i.photoUrl)) + '" loading="lazy" onerror="this.style.display=\'none\'">'
+          : '';
+        return '<div class="incident-card">'
+          + '<div class="row1"><span class="badge">' + escapeHtml(i.type || 'อื่นๆ') + '</span>'
+          + '<span class="mono" style="font-size:11.5px;color:var(--paper-dim);">' + escapeHtml(i.crossingId || '-') + '</span></div>'
+          + '<div class="incident-note">' + (i.note ? escapeHtml(i.note) : '<span style="color:var(--paper-dim);">ไม่มีรายละเอียดเพิ่มเติม</span>') + '</div>'
+          + '<div class="incident-meta"><span>🕒 ' + timeStr + '</span>' + (gpsLink ? '<span>📍 ' + gpsLink + '</span>' : '') + '</div>'
+          + photoHtml
+          + '</div>';
+      }).join('');
+    }
+
+    document.getElementById('detailDownloadBtn').onclick = function(){
+      downloadCsv(sorted, 'จังหวัด_' + provinceName);
+    };
+
+    document.getElementById('detailOverlay').style.display = 'flex';
+  }
+
+  function guessRegionByProvince(th){
+    for (var k in PROVINCE_LOOKUP){ if (PROVINCE_LOOKUP[k].th === th) return PROVINCE_LOOKUP[k].region; }
+    return null;
+  }
+
+  document.getElementById('detailClose').addEventListener('click', function(){
+    document.getElementById('detailOverlay').style.display = 'none';
+  });
+  document.getElementById('detailOverlay').addEventListener('click', function(e){
+    if (e.target === this) this.style.display = 'none';
+  });
+
+  /* ---------- CSV export ---------- */
+  function downloadCsv(list, labelForFile){
+    var headers = ['id','crossingId','province','type','note','gps','photoUrl','timestamp'];
+    var lines = [headers.join(',')];
+    list.forEach(function(i){
+      var row = [
+        i.id || '', i.crossingId || '', i._province || '', i.type || '',
+        (i.note || '').replace(/[\r\n]+/g,' ').replace(/"/g,'""'),
+        i.gps || '', i.photoUrl || '', i.timestamp || ''
+      ].map(function(v){ return '"' + String(v).replace(/"/g,'""') + '"'; });
+      lines.push(row.join(','));
+    });
+    var csv = '\uFEFF' + lines.join('\r\n');
+    var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var dateStr = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = 'railway-incidents_' + labelForFile + '_' + dateStr + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('downloadAllBtn').addEventListener('click', function(){
+    var filtered = getFilteredIncidents();
+    downloadCsv(filtered, currentRange);
+  });
+
+  /* ---------- events ---------- */
+  document.querySelectorAll('.range-tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      currentRange = tab.dataset.range;
+      renderAll();
+    });
+  });
+  document.getElementById('regionSelect').addEventListener('change', function(){
+    currentRegion = this.value;
+    renderAll();
+  });
+
+  /* ---------- init ---------- */
+  (async function init(){
+    document.getElementById('mapMsg').textContent = 'กำลังโหลดข้อมูล...';
+    await Promise.all([loadIncidents(), loadGeo()]);
+    themeReady = true;
+    renderAll();
+  })();
+})();
+</script>
+</body>
+</html>
