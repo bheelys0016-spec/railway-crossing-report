@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script>
+(function(){
+  var ok = false;
+  try { ok = sessionStorage.getItem('railway-auth') === '1'; } catch(e){}
+  if (!ok) { window.location.replace('login.html?redirect=login-logs.html'); }
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ประวัติการเข้าสู่ระบบ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --steel-900:#FAF3E4;
+    --steel-800:#FFFBF3;
+    --steel-700:#F1E3D3;
+    --steel-600:#E0C9AC;
+    --steel-line:#C9A97E;
+    --paper:#3A2419;
+    --paper-dim:#8A6B4E;
+    --amber:#A67C10;
+    --amber-dim:#7A5B0C;
+    --red:#7A1F2B;
+    --red-dim:#F6DFE1;
+    --green:#2F5233;
+    --green-dim:#DCEBDD;
+    --deco-stroke:var(--red);
+    --deco-opacity:.22;
+    --radius:10px;
+  }
+  html[data-theme="dark"]{
+    --steel-900:#1B1310;
+    --steel-800:#26190F;
+    --steel-700:#372316;
+    --steel-600:#513521;
+    --steel-line:#63432A;
+    --paper:#F3E7D3;
+    --paper-dim:#C6A87D;
+    --amber:#D1A227;
+    --amber-dim:#8C6A16;
+    --red:#A32E2E;
+    --red-dim:#441313;
+    --green:#3E6B47;
+    --green-dim:#1B3320;
+    --deco-stroke:var(--amber);
+    --deco-opacity:.16;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--steel-900);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 0 80px;position:relative;z-index:1;}
+  header{padding:24px 18px 0;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--red);margin:0 0 6px;
+  }
+  h1{font-family:'Oswald',sans-serif;font-weight:700;font-size:22px;letter-spacing:.01em;
+     text-transform:uppercase;margin:0 0 4px;color:var(--paper);}
+  .sub{font-size:12.5px;color:var(--paper-dim);margin:0;}
+
+  main{padding:16px 18px 0;}
+  .card{background:var(--steel-800);border:1px solid var(--steel-line);border-radius:12px;
+        padding:14px;margin-bottom:12px;}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+  .stat-card{background:var(--steel-800);border:1px solid var(--steel-line);border-radius:12px;
+             padding:12px 8px;text-align:center;}
+  .stat-card .num{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:700;color:var(--red);}
+  .stat-card .lbl{font-size:10.5px;color:var(--paper-dim);margin-top:2px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;color:var(--paper-dim);font-weight:500;font-size:11px;
+     text-transform:uppercase;letter-spacing:.04em;padding:7px 6px;border-bottom:1px solid var(--steel-line);}
+  td{padding:9px 6px;border-bottom:1px solid var(--steel-700);}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .badge{
+    display:inline-block;font-family:'JetBrains Mono',monospace;font-size:11px;
+    padding:2px 8px;border-radius:20px;background:var(--steel-700);color:var(--red);
+    border:1px solid var(--red-dim);
+  }
+  .empty{color:var(--paper-dim);font-size:13px;text-align:center;padding:24px 10px;}
+  .refresh-link{
+    display:block;width:100%;text-align:center;margin-top:2px;margin-bottom:6px;
+    font-size:12px;color:var(--paper-dim);background:var(--steel-800);
+    border:1px solid var(--steel-line);border-radius:var(--radius);padding:10px;cursor:pointer;
+  }
+
+  .theme-toggle{
+    position:fixed;top:14px;right:14px;z-index:80;
+    width:42px;height:42px;border-radius:50%;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    color:var(--paper);font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.12);
+  }
+  .lang-toggle{
+    position:fixed;top:14px;right:64px;z-index:80;
+    width:42px;height:42px;border-radius:10px;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    cursor:pointer;padding:0;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.12);
+  }
+  .lang-toggle svg{ width:26px;height:18px;border-radius:3px;display:block; }
+  .rail-deco{
+    position:fixed;top:0;bottom:0;width:260px;pointer-events:none;z-index:0;
+    opacity:var(--deco-opacity);display:none;
+  }
+  .rail-deco.left{left:0;} .rail-deco.right{right:0;}
+  .rail-deco svg{width:100%;height:100%;}
+  @media (min-width:1180px){ .rail-deco{display:block;} }
+
+  .train-nav{ position:fixed; left:16px; bottom:16px; z-index:90; }
+  .train-nav-btn{
+    width:56px;height:56px;border-radius:50%;
+    background:var(--steel-800);border:2px solid var(--red);
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.18);
+    animation:trainBob 2.6s ease-in-out infinite;
+  }
+  @keyframes trainBob{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    50%{ transform:translateY(-4px) rotate(-4deg); }
+  }
+  .train-menu{
+    display:none;position:absolute;bottom:66px;left:0;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    border-radius:12px;padding:8px;min-width:190px;
+    box-shadow:0 6px 18px rgba(0,0,0,.2);
+  }
+  .train-menu.open{ display:block; }
+  .train-menu a{
+    display:flex;align-items:center;gap:9px;
+    padding:9px 10px;border-radius:8px;text-decoration:none;
+    color:var(--paper);font-size:13px;font-family:'Inter',sans-serif;
+  }
+  .train-menu a:hover{ background:var(--steel-700); }
+  .train-menu a.current{ color:var(--red);font-weight:600; }
+  .train-menu .emoji{ font-size:16px; }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="สลับโหมดกลางวัน/กลางคืน">☀️</button>
+<button class="lang-toggle" id="langToggle" type="button" aria-label="Switch language / เปลี่ยนภาษา">🇹🇭</button>
+
+<div class="train-nav">
+  <div class="train-menu" id="trainMenu">
+    <a href="index.html" data-page="index"><span class="emoji">📝</span> แจ้งเหตุ</a>
+    <a href="railway-crossing-stats.html" data-page="stats"><span class="emoji">📊</span> สถิติ</a>
+    <a href="railway-crossing-map-stats.html" data-page="map"><span class="emoji">🗺️</span> แผนที่สถิติ</a>
+    <a href="stats-assistant.html" data-page="assistant"><span class="emoji">🤖</span> ถาม-ตอบสถิติ</a>
+    <a href="login-logs.html" data-page="logs"><span class="emoji">🔐</span> ประวัติการเข้าสู่ระบบ</a>
+  </div>
+  <button class="train-nav-btn" id="trainNavBtn" type="button" aria-label="เมนู">🚂</button>
+</div>
+
+<div class="rail-deco left" aria-hidden="true">
+  <svg viewBox="0 0 260 900" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="var(--deco-stroke)" stroke-width="2">
+    <path d="M150 90
+      C 140 70, 118 65, 108 78
+      C 96 92, 100 112, 92 126
+      C 80 146, 60 150, 58 172
+      C 56 196, 76 206, 80 228
+      C 84 252, 66 264, 70 290
+      C 74 316, 100 322, 104 348
+      C 108 374, 90 388, 96 414
+      C 100 432, 118 438, 122 458
+      C 126 480, 110 492, 116 516
+      C 121 538, 140 540, 143 562
+      C 146 584, 132 596, 138 618
+      C 143 636, 160 640, 162 660
+      C 164 682, 150 692, 154 712
+      C 157 728, 172 732, 172 748
+      C 172 762, 160 768, 160 780"
+      stroke-opacity=".55" stroke-width="2.4"/>
+    <line x1="40" y1="820" x2="40" y2="900" stroke="var(--paper-dim)" stroke-width="2"/>
+    <line x1="56" y1="820" x2="56" y2="900" stroke="var(--paper-dim)" stroke-width="2"/>
+    <g stroke="var(--paper-dim)" stroke-width="2">
+      <line x1="30" y1="828" x2="66" y2="828"/>
+      <line x1="30" y1="844" x2="66" y2="844"/>
+      <line x1="30" y1="860" x2="66" y2="860"/>
+      <line x1="30" y1="876" x2="66" y2="876"/>
+      <line x1="30" y1="892" x2="66" y2="892"/>
+    </g>
+  </svg>
+</div>
+<div class="rail-deco right" aria-hidden="true">
+  <svg viewBox="0 0 260 340" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="var(--deco-stroke)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(10,140)">
+      <path d="M40 -6 C 34 -16, 44 -22, 38 -32 C 32 -42, 44 -46, 40 -56" stroke-opacity=".6"/>
+      <path d="M54 -2 C 50 -12, 58 -16, 54 -26" stroke-opacity=".4"/>
+      <rect x="32" y="-2" width="16" height="26" rx="3"/>
+      <rect x="18" y="24" width="150" height="46" rx="20"/>
+      <path d="M70 24 q10 -16 24 0" />
+      <path d="M168 24 h34 v46 h-56 v-24 q0 -22 22 -22 z"/>
+      <rect x="182" y="34" width="16" height="14" rx="2"/>
+      <path d="M18 70 l-16 26 h34 l6 -26 z"/>
+      <line x1="8" y1="96" x2="210" y2="96"/>
+      <circle cx="46" cy="96" r="22"/>
+      <circle cx="46" cy="96" r="5"/>
+      <circle cx="104" cy="104" r="30"/>
+      <circle cx="104" cy="104" r="6"/>
+      <circle cx="168" cy="96" r="22"/>
+      <circle cx="168" cy="96" r="5"/>
+      <line x1="46" y1="96" x2="168" y2="96" stroke-opacity=".7"/>
+      <line x1="-10" y1="134" x2="230" y2="134" stroke="var(--paper-dim)" stroke-width="2"/>
+      <g stroke="var(--paper-dim)" stroke-width="2">
+        <line x1="0" y1="134" x2="0" y2="146"/>
+        <line x1="30" y1="134" x2="30" y2="146"/>
+        <line x1="60" y1="134" x2="60" y2="146"/>
+        <line x1="90" y1="134" x2="90" y2="146"/>
+        <line x1="120" y1="134" x2="120" y2="146"/>
+        <line x1="150" y1="134" x2="150" y2="146"/>
+        <line x1="180" y1="134" x2="180" y2="146"/>
+        <line x1="210" y1="134" x2="210" y2="146"/>
+      </g>
+    </g>
+  </svg>
+</div>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Level crossing safety network</p>
+    <h1 data-i18n="title">ประวัติการเข้าสู่ระบบ</h1>
+    <p class="sub" data-i18n="subtitle">บันทึกทุกครั้งที่มีการล็อกอินเข้าดูข้อมูลสถิติ — วันที่ เวลา และชื่อผู้ใช้</p>
+  </header>
+
+  <main>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl" data-i18n="statTotalLabel">จำนวนครั้งที่ล็อกอินทั้งหมด</div></div>
+      <div class="stat-card"><div class="num" id="statToday">0</div><div class="lbl" data-i18n="statTodayLabel">ล็อกอินวันนี้</div></div>
+    </div>
+
+    <button class="refresh-link" id="refreshBtn" data-i18n="refreshBtn">รีเฟรชข้อมูลล่าสุด</button>
+
+    <div class="card">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th data-i18n="thDate">วันที่</th><th data-i18n="thTime">เวลา</th><th data-i18n="thUser">ชื่อผู้ใช้</th></tr></thead>
+          <tbody id="logTable"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="tableEmpty" data-i18n="tableEmpty" style="display:none;">ยังไม่มีประวัติการเข้าสู่ระบบ</div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  /* ---------- day/night theme toggle ---------- */
+  var THEME_KEY = 'railway-theme';
+  var toggleBtn = document.getElementById('themeToggle');
+  function applyTheme(mode){
+    if (mode === 'dark'){
+      document.documentElement.setAttribute('data-theme', 'dark');
+      toggleBtn.textContent = '🌙';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      toggleBtn.textContent = '☀️';
+    }
+  }
+  var saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+  applyTheme(saved === 'dark' ? 'dark' : 'light');
+  toggleBtn.addEventListener('click', function(){
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var next = isDark ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem(THEME_KEY, next); } catch(e){}
+  });
+
+  /* ---------- language toggle (TH / EN) ---------- */
+  var LANG_KEY = 'railway-lang';
+  var FLAG_TH = '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#A51931"/><rect y="3.33" width="30" height="13.34" fill="#F4F5F8"/><rect y="6.67" width="30" height="6.66" fill="#2D2A4A"/></svg>';
+  var FLAG_GB = '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#00247D"/><g stroke="#FFFFFF" stroke-width="4"><line x1="0" y1="0" x2="30" y2="20"/><line x1="30" y1="0" x2="0" y2="20"/></g><g stroke="#CF142B" stroke-width="1.6"><line x1="0" y1="0" x2="30" y2="20"/><line x1="30" y1="0" x2="0" y2="20"/></g><g stroke="#FFFFFF" stroke-width="6"><line x1="15" y1="0" x2="15" y2="20"/><line x1="0" y1="10" x2="30" y2="10"/></g><g stroke="#CF142B" stroke-width="3"><line x1="15" y1="0" x2="15" y2="20"/><line x1="0" y1="10" x2="30" y2="10"/></g></svg>';
+  var langToggle = document.getElementById('langToggle');
+  var currentLang = 'th';
+  var logsReady = false;
+  var I18N = {
+    th: {
+      title: 'ประวัติการเข้าสู่ระบบ',
+      subtitle: 'บันทึกทุกครั้งที่มีการล็อกอินเข้าดูข้อมูลสถิติ — วันที่ เวลา และชื่อผู้ใช้',
+      statTotalLabel: 'จำนวนครั้งที่ล็อกอินทั้งหมด',
+      statTodayLabel: 'ล็อกอินวันนี้',
+      refreshBtn: 'รีเฟรชข้อมูลล่าสุด',
+      thDate: 'วันที่', thTime: 'เวลา', thUser: 'ชื่อผู้ใช้',
+      tableEmpty: 'ยังไม่มีประวัติการเข้าสู่ระบบ',
+      locale: 'th-TH'
+    },
+    en: {
+      title: 'Login History',
+      subtitle: 'Every time someone signs in to view the statistics — date, time, and username',
+      statTotalLabel: 'Total logins',
+      statTodayLabel: 'Logins today',
+      refreshBtn: 'Refresh latest data',
+      thDate: 'Date', thTime: 'Time', thUser: 'Username',
+      tableEmpty: 'No login history yet',
+      locale: 'en-GB'
+    }
+  };
+  function t(key){ return (I18N[currentLang] && I18N[currentLang][key]) || key; }
+
+  function applyLang(lang){
+    currentLang = (lang === 'en') ? 'en' : 'th';
+    document.documentElement.setAttribute('lang', currentLang);
+    langToggle.innerHTML = currentLang === 'en' ? FLAG_GB : FLAG_TH;
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+      el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    if (logsReady) render();
+  }
+  var savedLang = null;
+  try { savedLang = localStorage.getItem(LANG_KEY); } catch(e){}
+  applyLang(savedLang === 'en' ? 'en' : 'th');
+  langToggle.addEventListener('click', function(){
+    var next = currentLang === 'en' ? 'th' : 'en';
+    applyLang(next);
+    try { localStorage.setItem(LANG_KEY, next); } catch(e){}
+  });
+
+  /* ---------- floating train nav ---------- */
+  (function(){
+    var trainBtn = document.getElementById('trainNavBtn');
+    var trainMenu = document.getElementById('trainMenu');
+    trainBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      trainMenu.classList.toggle('open');
+    });
+    document.addEventListener('click', function(e){
+      if (!trainMenu.contains(e.target) && e.target !== trainBtn) trainMenu.classList.remove('open');
+    });
+    var link = trainMenu.querySelector('[data-page="logs"]');
+    if (link) link.classList.add('current');
+  })();
+
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzq_lB981Yq4JZKKMMy5olDkf3xIaJgoZODZrWs7PwGB0r0t7YvtPQEmNVfxHCa9rb85g/exec';
+  var logs = [];
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  async function loadLogs(){
+    try{
+      var resp = await fetch(SCRIPT_URL + '?type=logins', { method: 'GET' });
+      var data = await resp.json();
+      logs = Array.isArray(data) ? data : [];
+    }catch(e){ logs = []; }
+  }
+
+  function render(){
+    var total = logs.length;
+    document.getElementById('statTotal').textContent = total;
+
+    var now = new Date();
+    var today = logs.filter(function(l){
+      var d = new Date(l.timestamp);
+      return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && d.getDate()===now.getDate();
+    }).length;
+    document.getElementById('statToday').textContent = today;
+
+    var sorted = logs.slice().sort(function(a,b){ return new Date(b.timestamp) - new Date(a.timestamp); });
+    var tbody = document.getElementById('logTable');
+    var emptyEl = document.getElementById('tableEmpty');
+    if (!sorted.length){
+      tbody.innerHTML = '';
+      emptyEl.style.display = 'block';
+      return;
+    }
+    emptyEl.style.display = 'none';
+    tbody.innerHTML = sorted.slice(0,200).map(function(l){
+      var d = new Date(l.timestamp);
+      var dateStr = isNaN(d.getTime()) ? '-' : d.toLocaleDateString(t('locale'),{day:'2-digit',month:'2-digit',year:'numeric'});
+      var timeStr = isNaN(d.getTime()) ? '-' : d.toLocaleTimeString(t('locale'),{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      return '<tr>'
+        + '<td class="mono">' + dateStr + '</td>'
+        + '<td class="mono">' + timeStr + '</td>'
+        + '<td><span class="badge">' + escapeHtml(l.username || '-') + '</span></td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', async function(){
+    await loadLogs();
+    render();
+  });
+
+  (async function init(){
+    await loadLogs();
+    logsReady = true;
+    render();
+  })();
+})();
+</script>
+</body>
+</html>
