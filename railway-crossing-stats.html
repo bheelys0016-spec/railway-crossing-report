@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script>
+(function(){
+  var ok = false;
+  try { ok = sessionStorage.getItem('railway-auth') === '1'; } catch(e){}
+  if (!ok) { window.location.replace('login.html?redirect=railway-crossing-stats.html'); }
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>สถิติเหตุอันตรายจุดตัดทางรถไฟ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --steel-900:#FAF3E4;
+    --steel-800:#FFFBF3;
+    --steel-700:#F1E3D3;
+    --steel-600:#E0C9AC;
+    --steel-line:#C9A97E;
+    --paper:#3A2419;
+    --paper-dim:#8A6B4E;
+    --amber:#A67C10;
+    --amber-dim:#7A5B0C;
+    --red:#7A1F2B;
+    --red-dim:#F6DFE1;
+    --green:#2F5233;
+    --green-dim:#DCEBDD;
+    --status-text-pos:#1F4028;
+    --deco-stroke:var(--red);
+    --deco-opacity:.22;
+    --radius:10px;
+  }
+  html[data-theme="dark"]{
+    --steel-900:#1B1310;
+    --steel-800:#26190F;
+    --steel-700:#372316;
+    --steel-600:#513521;
+    --steel-line:#63432A;
+    --paper:#F3E7D3;
+    --paper-dim:#C6A87D;
+    --amber:#D1A227;
+    --amber-dim:#8C6A16;
+    --red:#A32E2E;
+    --red-dim:#441313;
+    --green:#3E6B47;
+    --green-dim:#1B3320;
+    --status-text-pos:#bdf0d0;
+    --deco-stroke:var(--amber);
+    --deco-opacity:.16;
+  }
+  .theme-toggle{
+    position:fixed;top:14px;right:14px;z-index:80;
+    width:42px;height:42px;border-radius:50%;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    color:var(--paper);font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.12);
+  }
+  .lang-toggle{
+    position:fixed;top:14px;right:64px;z-index:80;
+    width:42px;height:42px;border-radius:10px;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    cursor:pointer;padding:0;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.12);
+  }
+  .lang-toggle svg{ width:26px;height:18px;border-radius:3px;display:block; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--steel-900);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 0 64px;}
+  header{padding:28px 20px 0;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--green);margin:0 0 6px;
+  }
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:26px;
+    letter-spacing:.01em;
+    text-transform:uppercase;
+    margin:0 0 4px;
+    color:var(--paper);
+  }
+  .sub{font-size:13px;color:var(--paper-dim);margin:0;}
+
+  .gate-zone{
+    position:relative;
+    height:72px;
+    margin:22px 0 6px;
+    padding:0 20px;
+    display:flex;
+    align-items:center;
+  }
+  .gate-post{
+    position:absolute;left:20px;top:6px;bottom:0;width:8px;
+    background:var(--steel-600);border-radius:3px;
+  }
+  .gate-post.right{left:auto;right:20px;}
+  .gate-arm{
+    position:absolute;left:24px;top:20px;
+    width:calc(100% - 48px);height:22px;
+    border-radius:4px;
+    background:repeating-linear-gradient(135deg,var(--green) 0 18px,var(--steel-900) 18px 36px);
+    transform-origin:left center;
+    animation:lower 1.1s cubic-bezier(.34,1.56,.64,1) both;
+    box-shadow:0 3px 0 rgba(0,0,0,.35);
+  }
+  @keyframes lower{
+    0%{transform:rotate(-72deg);}
+    100%{transform:rotate(0deg);}
+  }
+  @media (prefers-reduced-motion:reduce){.gate-arm{animation:none;}}
+
+  main{padding:18px 20px 0;}
+
+  .card{
+    background:var(--steel-800);
+    border:1px solid var(--steel-line);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .card h2{
+    font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.05em;
+    margin:0 0 12px;color:var(--paper-dim);
+  }
+
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+  .stat-card{
+    background:var(--steel-800);border:1px solid var(--steel-line);border-radius:12px;
+    padding:14px 10px;text-align:center;
+  }
+  .stat-card .num{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--amber);}
+  .stat-card .lbl{font-size:11px;color:var(--paper-dim);margin-top:3px;}
+
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+  .bar-row .name{width:118px;flex:none;font-size:12.5px;color:var(--paper-dim);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bar-track{flex:1;background:var(--steel-700);border-radius:4px;height:16px;overflow:hidden;}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--amber-dim),var(--amber));border-radius:4px;}
+  .bar-count{width:26px;flex:none;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--paper);}
+
+  .filter-row{display:flex;gap:8px;margin-bottom:12px;}
+  .filter-row input{
+    flex:1;background:var(--steel-700);border:1px solid var(--steel-line);
+    border-radius:var(--radius);color:var(--paper);padding:8px 10px;font-size:13px;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .filter-row button{
+    background:var(--steel-700);border:1px solid var(--steel-line);color:var(--paper-dim);
+    border-radius:var(--radius);padding:8px 12px;font-size:12px;cursor:pointer;
+  }
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{text-align:left;color:var(--paper-dim);font-weight:500;font-size:11px;
+     text-transform:uppercase;letter-spacing:.04em;padding:6px 6px;border-bottom:1px solid var(--steel-line);}
+  td{padding:8px 6px;border-bottom:1px solid var(--steel-700);vertical-align:top;}
+  .badge{
+    display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    padding:2px 7px;border-radius:20px;background:var(--steel-700);color:var(--amber);
+    border:1px solid var(--amber-dim);white-space:nowrap;
+  }
+  .empty{color:var(--paper-dim);font-size:13px;text-align:center;padding:22px 10px;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .refresh-link{
+    display:block;width:100%;text-align:center;margin-top:4px;margin-bottom:14px;
+    font-size:12px;color:var(--paper-dim);background:var(--steel-800);
+    border:1px solid var(--steel-line);border-radius:var(--radius);padding:10px;cursor:pointer;
+  }
+  .pagination{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    margin-top:14px;flex-wrap:wrap;
+  }
+  .pagination button{
+    min-width:32px;height:32px;padding:0 8px;border-radius:8px;
+    background:var(--steel-700);border:1px solid var(--steel-line);color:var(--paper);
+    font-family:'JetBrains Mono',monospace;font-size:12.5px;cursor:pointer;
+  }
+  .pagination button.active{
+    background:var(--red);border-color:var(--red);color:#fff;font-weight:700;
+  }
+  .pagination button:disabled{
+    opacity:.35;cursor:not-allowed;
+  }
+  .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 6px var(--green);margin-right:6px;}
+  @media (max-width:380px){
+    .stat-grid{grid-template-columns:1fr 1fr;}
+  }
+
+  .rail-deco{
+    position:fixed;
+    top:0; bottom:0;
+    width:260px;
+    pointer-events:none;
+    z-index:0;
+    opacity:var(--deco-opacity);
+    display:none;
+  }
+  .rail-deco.left{ left:0; }
+  .rail-deco.right{ right:0; }
+  .rail-deco svg{ width:100%; height:100%; }
+  @media (min-width:1180px){
+    .rail-deco{ display:block; }
+  }
+  .wrap{ position:relative; z-index:1; }
+  .train-nav{ position:fixed; left:16px; bottom:16px; z-index:90; }
+  .train-nav-btn{
+    width:56px;height:56px;border-radius:50%;
+    background:var(--steel-800);border:2px solid var(--red);
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.18);
+    animation:trainBob 2.6s ease-in-out infinite;
+  }
+  @keyframes trainBob{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    50%{ transform:translateY(-4px) rotate(-4deg); }
+  }
+  .train-menu{
+    display:none;position:absolute;bottom:66px;left:0;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    border-radius:12px;padding:8px;min-width:190px;
+    box-shadow:0 6px 18px rgba(0,0,0,.2);
+  }
+  .train-menu.open{ display:block; }
+  .train-menu a{
+    display:flex;align-items:center;gap:9px;
+    padding:9px 10px;border-radius:8px;text-decoration:none;
+    color:var(--paper);font-size:13px;font-family:'Inter',sans-serif;
+  }
+  .train-menu a:hover{ background:var(--steel-700); }
+  .train-menu a.current{ color:var(--red);font-weight:600; }
+  .train-menu .emoji{ font-size:16px; }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="สลับโหมดกลางวัน/กลางคืน">☀️</button>
+<button class="lang-toggle" id="langToggle" type="button" aria-label="Switch language / เปลี่ยนภาษา">🇹🇭</button>
+
+<div class="train-nav">
+  <div class="train-menu" id="trainMenu">
+    <a href="index.html" data-page="index"><span class="emoji">📝</span> แจ้งเหตุ</a>
+    <a href="railway-crossing-stats.html" data-page="stats"><span class="emoji">📊</span> สถิติ</a>
+    <a href="railway-crossing-map-stats.html" data-page="map"><span class="emoji">🗺️</span> แผนที่สถิติ</a>
+    <a href="stats-assistant.html" data-page="assistant"><span class="emoji">🤖</span> ถาม-ตอบสถิติ</a>
+    <a href="login-logs.html" data-page="logs"><span class="emoji">🔐</span> ประวัติการเข้าสู่ระบบ</a>
+  </div>
+  <button class="train-nav-btn" id="trainNavBtn" type="button" aria-label="เมนู">🚂</button>
+</div>
+
+
+<div class="rail-deco left" aria-hidden="true">
+  <svg viewBox="0 0 260 900" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="var(--deco-stroke)" stroke-width="2">
+    <!-- simplified Thailand outline, decorative only -->
+    <path d="M150 90
+      C 140 70, 118 65, 108 78
+      C 96 92, 100 112, 92 126
+      C 80 146, 60 150, 58 172
+      C 56 196, 76 206, 80 228
+      C 84 252, 66 264, 70 290
+      C 74 316, 100 322, 104 348
+      C 108 374, 90 388, 96 414
+      C 100 432, 118 438, 122 458
+      C 126 480, 110 492, 116 516
+      C 121 538, 140 540, 143 562
+      C 146 584, 132 596, 138 618
+      C 143 636, 160 640, 162 660
+      C 164 682, 150 692, 154 712
+      C 157 728, 172 732, 172 748
+      C 172 762, 160 768, 160 780"
+      stroke-opacity=".55" stroke-width="2.4"/>
+    <!-- rail track running down the side -->
+    <line x1="40" y1="820" x2="40" y2="900" stroke="var(--paper-dim)" stroke-width="2"/>
+    <line x1="56" y1="820" x2="56" y2="900" stroke="var(--paper-dim)" stroke-width="2"/>
+    <g stroke="var(--paper-dim)" stroke-width="2">
+      <line x1="30" y1="828" x2="66" y2="828"/>
+      <line x1="30" y1="844" x2="66" y2="844"/>
+      <line x1="30" y1="860" x2="66" y2="860"/>
+      <line x1="30" y1="876" x2="66" y2="876"/>
+      <line x1="30" y1="892" x2="66" y2="892"/>
+    </g>
+  </svg>
+</div>
+
+<div class="rail-deco right" aria-hidden="true">
+  <svg viewBox="0 0 260 340" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="var(--deco-stroke)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- line-art steam locomotive, side profile -->
+    <g transform="translate(10,140)">
+      <!-- smoke curls -->
+      <path d="M40 -6 C 34 -16, 44 -22, 38 -32 C 32 -42, 44 -46, 40 -56" stroke-opacity=".6"/>
+      <path d="M54 -2 C 50 -12, 58 -16, 54 -26" stroke-opacity=".4"/>
+      <!-- chimney -->
+      <rect x="32" y="-2" width="16" height="26" rx="3"/>
+      <!-- boiler -->
+      <rect x="18" y="24" width="150" height="46" rx="20"/>
+      <!-- dome -->
+      <path d="M70 24 q10 -16 24 0" />
+      <!-- cab -->
+      <path d="M168 24 h34 v46 h-56 v-24 q0 -22 22 -22 z"/>
+      <!-- cab window -->
+      <rect x="182" y="34" width="16" height="14" rx="2"/>
+      <!-- cow-catcher / pilot -->
+      <path d="M18 70 l-16 26 h34 l6 -26 z"/>
+      <!-- footplate line -->
+      <line x1="8" y1="96" x2="210" y2="96"/>
+      <!-- wheels -->
+      <circle cx="46" cy="96" r="22"/>
+      <circle cx="46" cy="96" r="5"/>
+      <circle cx="104" cy="104" r="30"/>
+      <circle cx="104" cy="104" r="6"/>
+      <circle cx="168" cy="96" r="22"/>
+      <circle cx="168" cy="96" r="5"/>
+      <!-- connecting rod -->
+      <line x1="46" y1="96" x2="168" y2="96" stroke-opacity=".7"/>
+      <!-- rail line under wheels -->
+      <line x1="-10" y1="134" x2="230" y2="134" stroke="var(--paper-dim)" stroke-width="2"/>
+      <g stroke="var(--paper-dim)" stroke-width="2">
+        <line x1="0" y1="134" x2="0" y2="146"/>
+        <line x1="30" y1="134" x2="30" y2="146"/>
+        <line x1="60" y1="134" x2="60" y2="146"/>
+        <line x1="90" y1="134" x2="90" y2="146"/>
+        <line x1="120" y1="134" x2="120" y2="146"/>
+        <line x1="150" y1="134" x2="150" y2="146"/>
+        <line x1="180" y1="134" x2="180" y2="146"/>
+        <line x1="210" y1="134" x2="210" y2="146"/>
+      </g>
+    </g>
+  </svg>
+</div>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow"><span class="live-dot"></span>Level crossing safety network</p>
+    <h1 data-i18n="title">สถิติเหตุอันตรายจุดตัดทางรถไฟ</h1>
+    <p class="sub" data-i18n="subtitle">ข้อมูลเชื่อมต่อสดจากแบบฟอร์มแจ้งเหตุที่ประชาชนสแกน QR ส่งเข้ามา</p>
+  </header>
+
+  <div class="gate-zone">
+    <div class="gate-post"></div>
+    <div class="gate-post right"></div>
+    <div class="gate-arm"></div>
+  </div>
+
+  <main>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl" data-i18n="statTotalLabel">ทั้งหมด</div></div>
+      <div class="stat-card"><div class="num" id="statMonth">0</div><div class="lbl" data-i18n="statMonthLabel">เดือนนี้</div></div>
+      <div class="stat-card"><div class="num" id="statCrossings">0</div><div class="lbl" data-i18n="statCrossingsLabel">จุดที่แจ้งเหตุ</div></div>
+    </div>
+
+    <div class="btn-row" style="display:flex;gap:8px;margin-bottom:14px;">
+      <a href="railway-crossing-map-stats.html" data-i18n="mapLink" style="flex:1;display:block;text-align:center;background:var(--steel-800);border:1px solid var(--green);color:var(--status-text-pos);border-radius:var(--radius);padding:11px;font-size:13px;text-decoration:none;font-weight:600;">
+        ดูแผนที่สถิติแยกตามจังหวัด →
+      </a>
+    </div>
+
+    <button class="refresh-link" id="refreshBtn" data-i18n="refreshBtn">รีเฟรชข้อมูลล่าสุด</button>
+
+    <div class="card">
+      <h2 data-i18n="byTypeHeader">แยกตามประเภทเหตุ</h2>
+      <div id="typeBars"><div class="empty" data-i18n="noData">ยังไม่มีข้อมูล</div></div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="byCrossingHeader">จุดตัดที่มีการแจ้งเหตุมากที่สุด</h2>
+      <div id="crossingBars"><div class="empty" data-i18n="noData">ยังไม่มีข้อมูล</div></div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="recentHeader">รายการแจ้งเหตุล่าสุด</h2>
+      <div class="filter-row">
+        <input id="filterInput" data-i18n-placeholder="filterPlaceholder" placeholder="กรองตามรหัสจุดตัด เช่น CR-001">
+        <button id="filterClear" data-i18n="clearBtn">ล้าง</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th data-i18n="thTime">เวลา</th><th data-i18n="thCrossing">จุด</th><th data-i18n="thType">ประเภท</th><th data-i18n="thTrust" style="text-align:center;">น่าเชื่อถือ</th></tr></thead>
+          <tbody id="incidentTable"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="tableEmpty" data-i18n="noMatch" style="display:none;">ไม่พบรายการที่ตรงกับการค้นหา</div>
+      <div class="pagination" id="pagination" style="display:none;"></div>
+    </div>
+  </main>
+</div>
+
+<div id="lightbox" style="display:none;position:fixed;inset:0;background:rgba(10,12,13,.88);z-index:50;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:var(--steel-800);border:1px solid var(--steel-line);border-radius:12px;padding:18px;max-width:440px;width:100%;max-height:85vh;overflow-y:auto;" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+      <span class="badge" id="detailType" style="font-size:12px;padding:4px 10px;"></span>
+      <button id="detailClose" style="background:none;border:none;color:var(--paper-dim);font-size:18px;cursor:pointer;line-height:1;">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--paper-dim);margin-bottom:2px;" data-i18n="detailCrossingLabel">รหัสจุดตัด</div>
+    <div class="mono" id="detailCrossing" style="font-size:15px;margin-bottom:12px;color:var(--amber);"></div>
+    <div style="font-size:12px;color:var(--paper-dim);margin-bottom:2px;" data-i18n="detailTimeLabel">เวลาแจ้ง</div>
+    <div class="mono" id="detailTime" style="font-size:13px;margin-bottom:12px;"></div>
+    <div style="font-size:12px;color:var(--paper-dim);margin-bottom:2px;" data-i18n="detailNoteLabel">รายละเอียดที่แจ้ง</div>
+    <div id="detailNote" style="font-size:13.5px;line-height:1.6;margin-bottom:12px;white-space:pre-wrap;"></div>
+    <div id="detailGpsWrap" style="margin-bottom:12px;">
+      <div style="font-size:12px;color:var(--paper-dim);margin-bottom:2px;" data-i18n="detailGpsLabel">ตำแหน่ง GPS</div>
+      <div class="mono" id="detailGps" style="font-size:13px;"></div>
+    </div>
+    <div id="detailPhotoWrap" style="display:none;">
+      <div style="font-size:12px;color:var(--paper-dim);margin-bottom:6px;" data-i18n="detailPhotoLabel">ภาพที่แนบ</div>
+      <img id="detailPhoto" style="width:100%;border-radius:var(--radius);border:1px solid var(--steel-line);display:block;">
+    </div>
+    <div id="detailTrustWrap" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--steel-line);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span id="detailTrustBadge" style="font-size:18px;"></span>
+        <span id="detailTrustLabel" style="font-size:13px;font-weight:600;"></span>
+      </div>
+      <ul id="detailTrustReasons" style="margin:0;padding-left:18px;font-size:12.5px;color:var(--paper-dim);line-height:1.7;"></ul>
+      <div style="font-size:11px;color:var(--paper-dim);margin-top:8px;font-style:italic;" data-i18n="trustDisclaimer">คะแนนนี้เป็นเพียงสัญญาณช่วยกรองเบื้องต้น ไม่ใช่การตัดสินขาดว่าจริงหรือปลอม โปรดใช้วิจารณญาณของเจ้าหน้าที่ประกอบด้วยเสมอ</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- day/night theme toggle ---------- */
+  var THEME_KEY = 'railway-theme';
+  var toggleBtn = document.getElementById('themeToggle');
+  function applyTheme(mode){
+    if (mode === 'dark'){
+      document.documentElement.setAttribute('data-theme', 'dark');
+      toggleBtn.textContent = '🌙';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      toggleBtn.textContent = '☀️';
+    }
+  }
+  var saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+  applyTheme(saved === 'dark' ? 'dark' : 'light');
+  toggleBtn.addEventListener('click', function(){
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var next = isDark ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem(THEME_KEY, next); } catch(e){}
+  });
+
+  /* ---------- language toggle (TH / EN) ---------- */
+  var LANG_KEY = 'railway-lang';
+  var FLAG_TH = '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#A51931"/><rect y="3.33" width="30" height="13.34" fill="#F4F5F8"/><rect y="6.67" width="30" height="6.66" fill="#2D2A4A"/></svg>';
+  var FLAG_GB = '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#00247D"/><g stroke="#FFFFFF" stroke-width="4"><line x1="0" y1="0" x2="30" y2="20"/><line x1="30" y1="0" x2="0" y2="20"/></g><g stroke="#CF142B" stroke-width="1.6"><line x1="0" y1="0" x2="30" y2="20"/><line x1="30" y1="0" x2="0" y2="20"/></g><g stroke="#FFFFFF" stroke-width="6"><line x1="15" y1="0" x2="15" y2="20"/><line x1="0" y1="10" x2="30" y2="10"/></g><g stroke="#CF142B" stroke-width="3"><line x1="15" y1="0" x2="15" y2="20"/><line x1="0" y1="10" x2="30" y2="10"/></g></svg>';
+  var langToggle = document.getElementById('langToggle');
+  var currentLang = 'th';
+  var I18N = {
+    th: {
+      title: 'สถิติเหตุอันตรายจุดตัดทางรถไฟ',
+      subtitle: 'ข้อมูลเชื่อมต่อสดจากแบบฟอร์มแจ้งเหตุที่ประชาชนสแกน QR ส่งเข้ามา',
+      statTotalLabel: 'ทั้งหมด', statMonthLabel: 'เดือนนี้', statCrossingsLabel: 'จุดที่แจ้งเหตุ',
+      mapLink: 'ดูแผนที่สถิติแยกตามจังหวัด →',
+      refreshBtn: 'รีเฟรชข้อมูลล่าสุด',
+      byTypeHeader: 'แยกตามประเภทเหตุ',
+      byCrossingHeader: 'จุดตัดที่มีการแจ้งเหตุมากที่สุด',
+      recentHeader: 'รายการแจ้งเหตุล่าสุด',
+      filterPlaceholder: 'กรองตามรหัสจุดตัด เช่น CR-001',
+      clearBtn: 'ล้าง',
+      thTime: 'เวลา', thCrossing: 'จุด', thType: 'ประเภท',
+      noMatch: 'ไม่พบรายการที่ตรงกับการค้นหา',
+      noData: 'ยังไม่มีข้อมูล',
+      viewLink: 'ดู ›',
+      detailCrossingLabel: 'รหัสจุดตัด',
+      detailTimeLabel: 'เวลาแจ้ง',
+      detailNoteLabel: 'รายละเอียดที่แจ้ง',
+      detailGpsLabel: 'ตำแหน่ง GPS',
+      detailPhotoLabel: 'ภาพที่แนบ',
+      noDetailText: 'ไม่มีรายละเอียดเพิ่มเติม',
+      openInMaps: 'เปิดใน Google Maps',
+      thTrust: 'น่าเชื่อถือ',
+      trustTitle: 'คะแนนความน่าเชื่อถือ (ใช้ประกอบการตรวจสอบ ไม่ใช่การตัดสินขาด)',
+      trustHigh: 'น่าเชื่อถือสูง',
+      trustMedium: 'ควรตรวจสอบเพิ่มเติม',
+      trustLow: 'ความน่าเชื่อถือต่ำ ควรตรวจสอบก่อนดำเนินการ',
+      trustDisclaimer: 'คะแนนนี้เป็นเพียงสัญญาณช่วยกรองเบื้องต้น ไม่ใช่การตัดสินขาดว่าจริงหรือปลอม โปรดใช้วิจารณญาณของเจ้าหน้าที่ประกอบด้วยเสมอ',
+      reasonGps: 'มีตำแหน่ง GPS แนบมา',
+      reasonNoGps: 'ไม่มีตำแหน่ง GPS แนบมา',
+      reasonPhoto: 'มีรูปถ่ายแนบมา',
+      reasonNoPhoto: 'ไม่มีรูปถ่ายแนบมา',
+      reasonDetails: 'มีรายละเอียดเพิ่มเติมที่ชัดเจน',
+      reasonSuspicious: 'พบคำที่บ่งชี้ว่าอาจเป็นข้อมูลทดสอบ/สแปม',
+      reasonGpsDrift: 'ตำแหน่ง GPS ห่างจากตำแหน่งที่เคยแจ้งของจุดนี้มากผิดปกติ',
+      locale: 'th-TH'
+    },
+    en: {
+      title: 'Level Crossing Hazard Statistics',
+      subtitle: 'Live data connected from the public hazard report form (submitted via QR code)',
+      statTotalLabel: 'Total', statMonthLabel: 'This month', statCrossingsLabel: 'Crossings reported',
+      mapLink: 'View map statistics by province →',
+      refreshBtn: 'Refresh latest data',
+      byTypeHeader: 'By incident type',
+      byCrossingHeader: 'Crossings with the most reports',
+      recentHeader: 'Recent reports',
+      filterPlaceholder: 'Filter by crossing ID, e.g. CR-001',
+      clearBtn: 'Clear',
+      thTime: 'Time', thCrossing: 'Crossing', thType: 'Type',
+      noMatch: 'No results match your search',
+      noData: 'No data yet',
+      viewLink: 'View ›',
+      detailCrossingLabel: 'Crossing ID',
+      detailTimeLabel: 'Reported at',
+      detailNoteLabel: 'Details reported',
+      detailGpsLabel: 'GPS location',
+      detailPhotoLabel: 'Attached photo',
+      noDetailText: 'No additional details',
+      openInMaps: 'Open in Google Maps',
+      thTrust: 'Trust',
+      trustTitle: 'Trust score (a screening aid only, not a final verdict)',
+      trustHigh: 'High confidence',
+      trustMedium: 'Worth double-checking',
+      trustLow: 'Low confidence — verify before acting',
+      trustDisclaimer: 'This score is only a screening signal, not a final verdict on whether the report is genuine. Always apply staff judgment as well.',
+      reasonGps: 'GPS location attached',
+      reasonNoGps: 'No GPS location attached',
+      reasonPhoto: 'Photo attached',
+      reasonNoPhoto: 'No photo attached',
+      reasonDetails: 'Includes clear additional details',
+      reasonSuspicious: 'Contains wording suggesting test/spam data',
+      reasonGpsDrift: 'GPS location is unusually far from previous reports at this crossing',
+      locale: 'en-GB'
+    }
+  };
+  function t(key){ return (I18N[currentLang] && I18N[currentLang][key]) || key; }
+
+  function applyLang(lang){
+    currentLang = (lang === 'en') ? 'en' : 'th';
+    document.documentElement.setAttribute('lang', currentLang);
+    langToggle.innerHTML = currentLang === 'en' ? FLAG_GB : FLAG_TH;
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+      el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){
+      el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder')));
+    });
+    if (typeof renderAll === 'function' && incidentsLoaded) renderAll();
+  }
+  var savedLang = null;
+  try { savedLang = localStorage.getItem(LANG_KEY); } catch(e){}
+  var incidentsLoaded = false;
+  applyLang(savedLang === 'en' ? 'en' : 'th');
+  langToggle.addEventListener('click', function(){
+    var next = currentLang === 'en' ? 'th' : 'en';
+    applyLang(next);
+    try { localStorage.setItem(LANG_KEY, next); } catch(e){}
+  });
+
+  /* ---------- floating train nav ---------- */
+  (function(){
+    var trainBtn = document.getElementById('trainNavBtn');
+    var trainMenu = document.getElementById('trainMenu');
+    trainBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      trainMenu.classList.toggle('open');
+    });
+    document.addEventListener('click', function(e){
+      if (!trainMenu.contains(e.target) && e.target !== trainBtn) trainMenu.classList.remove('open');
+    });
+    var link = trainMenu.querySelector('[data-page="stats"]');
+    if (link) link.classList.add('current');
+  })();
+
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzq_lB981Yq4JZKKMMy5olDkf3xIaJgoZODZrWs7PwGB0r0t7YvtPQEmNVfxHCa9rb85g/exec';
+  var incidents = [];
+
+  var lightbox = document.getElementById('lightbox');
+  lightbox.addEventListener('click', function(){ lightbox.style.display = 'none'; });
+
+  function toDriveThumb(url){
+    if (!url) return url;
+    var m = /[?&]id=([^&]+)/.exec(url);
+    return m ? ('https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w1000') : url;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  /* ---------- Level 2: trust score (heuristic only — staff make the final call) ---------- */
+  function haversineKm(lat1, lng1, lat2, lng2){
+    var R = 6371;
+    var dLat = (lat2-lat1) * Math.PI/180;
+    var dLng = (lng2-lng1) * Math.PI/180;
+    var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+      Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  var SUSPICIOUS_PATTERN = /ทดสอบ|test|bot|xxx+|asdf|1234|สแปม|spam/i;
+
+  function computeTrust(incident, allIncidents){
+    var score = 0;
+    var reasons = [];
+    var hasGps = incident.gps && typeof incident.gps === 'string' && incident.gps.indexOf(',') !== -1;
+    var hasPhoto = !!incident.photoUrl;
+    var noteLen = (incident.note || '').trim().length;
+    var crossingId = (incident.crossingId || '').trim();
+
+    if (hasGps){ score += 2; reasons.push({key:'reasonGps', positive:true}); }
+    else{ reasons.push({key:'reasonNoGps', positive:false}); }
+
+    if (hasPhoto){ score += 2; reasons.push({key:'reasonPhoto', positive:true}); }
+    else{ reasons.push({key:'reasonNoPhoto', positive:false}); }
+
+    if (noteLen > 10){ score += 1; reasons.push({key:'reasonDetails', positive:true}); }
+
+    if (crossingId && crossingId !== 'CR-000'){ score += 1; }
+
+    if (SUSPICIOUS_PATTERN.test(crossingId) || SUSPICIOUS_PATTERN.test(incident.note || '')){
+      score -= 3;
+      reasons.push({key:'reasonSuspicious', positive:false});
+    }
+
+    if (hasGps && crossingId){
+      var parts = incident.gps.split(',');
+      var lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
+      if (!isNaN(lat) && !isNaN(lng)){
+        var history = allIncidents.filter(function(x){
+          return x.crossingId === crossingId && x.id !== incident.id && x.gps &&
+            typeof x.gps === 'string' && x.gps.indexOf(',') !== -1;
+        });
+        if (history.length >= 2){
+          var distances = history.map(function(x){
+            var p = x.gps.split(',');
+            return haversineKm(lat, lng, parseFloat(p[0]), parseFloat(p[1]));
+          }).filter(function(d){ return !isNaN(d); });
+          if (distances.length){
+            var avgDist = distances.reduce(function(a,b){return a+b;},0) / distances.length;
+            if (avgDist > 15){
+              score -= 2;
+              reasons.push({key:'reasonGpsDrift', positive:false});
+            }
+          }
+        }
+      }
+    }
+
+    var level = score >= 4 ? 'high' : (score >= 1 ? 'medium' : 'low');
+    return {score: score, level: level, reasons: reasons};
+  }
+
+  var TRUST_BADGE = { high: '🟢', medium: '🟡', low: '🔴' };
+
+  async function loadIncidents(){
+    try{
+      var resp = await fetch(SCRIPT_URL, { method: 'GET' });
+      incidents = await resp.json();
+      if (!Array.isArray(incidents)) incidents = [];
+    }catch(e){
+      incidents = [];
+    }
+  }
+
+  function countBy(arr, key){
+    var counts = {};
+    arr.forEach(function(i){counts[i[key]] = (counts[i[key]] || 0) + 1;});
+    return Object.entries(counts).sort(function(a,b){return b[1]-a[1];});
+  }
+
+  function renderBars(containerId, pairs){
+    var el = document.getElementById(containerId);
+    if (!pairs.length){
+      el.innerHTML = '<div class="empty">' + t('noData') + '</div>';
+      return;
+    }
+    var max = pairs[0][1];
+    el.innerHTML = pairs.slice(0,6).map(function(p){
+      var pct = Math.round((p[1]/max)*100);
+      return '<div class="bar-row">'
+        + '<div class="name">' + escapeHtml(p[0]) + '</div>'
+        + '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>'
+        + '<div class="bar-count">' + p[1] + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  var currentPage = 1;
+  var PAGE_SIZE = 10;
+
+  function renderTable(filter, page){
+    if (page) currentPage = page;
+    var rows = incidents.slice().sort(function(a,b){return new Date(b.timestamp)-new Date(a.timestamp);});
+    if (filter){
+      rows = rows.filter(function(i){return (i.crossingId || '').toLowerCase().indexOf(filter.toLowerCase()) !== -1;});
+    }
+    var tbody = document.getElementById('incidentTable');
+    var emptyEl = document.getElementById('tableEmpty');
+    var pagerEl = document.getElementById('pagination');
+    if (!rows.length){
+      tbody.innerHTML = '';
+      emptyEl.style.display = 'block';
+      pagerEl.style.display = 'none';
+      return;
+    }
+    emptyEl.style.display = 'none';
+
+    var totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+    var startIdx = (currentPage - 1) * PAGE_SIZE;
+    var pageRows = rows.slice(startIdx, startIdx + PAGE_SIZE);
+
+    tbody.innerHTML = pageRows.map(function(i){
+      var d = new Date(i.timestamp);
+      var timeStr = d.toLocaleDateString(t('locale'),{day:'2-digit',month:'2-digit'}) + ' '
+        + d.toLocaleTimeString(t('locale'),{hour:'2-digit',minute:'2-digit'});
+      var trust = computeTrust(i, incidents);
+      return '<tr class="detail-row" data-id="' + escapeHtml(i.id) + '" style="cursor:pointer;">'
+        + '<td class="mono">' + timeStr + '</td>'
+        + '<td class="mono">' + escapeHtml(i.crossingId || '-') + '</td>'
+        + '<td><span class="badge">' + escapeHtml(i.type || '-') + '</span></td>'
+        + '<td style="text-align:center;font-size:13px;" title="' + escapeHtml(t('trustTitle')) + '">' + TRUST_BADGE[trust.level] + '</td>'
+        + '</tr>';
+    }).join('');
+    tbody.querySelectorAll('.detail-row').forEach(function(row){
+      row.addEventListener('click', function(){
+        var rec = incidents.find(function(x){return x.id === row.dataset.id;});
+        if (rec) openDetail(rec);
+      });
+    });
+
+    renderPagination(totalPages, filter);
+  }
+
+  function renderPagination(totalPages, filter){
+    var pagerEl = document.getElementById('pagination');
+    if (totalPages <= 1){
+      pagerEl.style.display = 'none';
+      pagerEl.innerHTML = '';
+      return;
+    }
+    pagerEl.style.display = 'flex';
+
+    function pageBtn(p, label, disabled, active){
+      return '<button type="button" data-page="' + p + '"' + (disabled?' disabled':'') + (active?' class="active"':'') + '>' + label + '</button>';
+    }
+    function dots(){ return '<span style="color:var(--paper-dim);padding:0 2px;">…</span>'; }
+
+    var html = pageBtn(currentPage-1, '‹', currentPage<=1, false);
+    var windowSize = 1;
+    for (var p = 1; p <= totalPages; p++){
+      var edge = (p === 1 || p === totalPages);
+      var near = Math.abs(p - currentPage) <= windowSize;
+      if (edge || near){
+        html += pageBtn(p, String(p), false, p===currentPage);
+      } else if (p === 2 || p === totalPages - 1){
+        html += dots();
+      }
+    }
+    html += pageBtn(currentPage+1, '›', currentPage>=totalPages, false);
+    pagerEl.innerHTML = html;
+  }
+
+  function openDetail(rec){
+    document.getElementById('detailType').textContent = rec.type || '-';
+    document.getElementById('detailCrossing').textContent = rec.crossingId || '-';
+    var d = new Date(rec.timestamp);
+    document.getElementById('detailTime').textContent = isNaN(d.getTime()) ? '-' :
+      d.toLocaleDateString(t('locale'),{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' +
+      d.toLocaleTimeString(t('locale'),{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('detailNote').textContent = rec.note ? rec.note : t('noDetailText');
+
+    var gpsWrap = document.getElementById('detailGpsWrap');
+    if (rec.gps){
+      gpsWrap.style.display = 'block';
+      document.getElementById('detailGps').innerHTML = escapeHtml(rec.gps) +
+        ' &nbsp; <a href="https://maps.google.com/?q=' + encodeURIComponent(rec.gps) + '" target="_blank" rel="noopener" style="color:var(--green);">' + escapeHtml(t('openInMaps')) + '</a>';
+    } else {
+      gpsWrap.style.display = 'none';
+    }
+
+    var photoWrap = document.getElementById('detailPhotoWrap');
+    if (rec.photoUrl){
+      photoWrap.style.display = 'block';
+      document.getElementById('detailPhoto').src = toDriveThumb(rec.photoUrl);
+    } else {
+      photoWrap.style.display = 'none';
+    }
+
+    var trust = computeTrust(rec, incidents);
+    var TRUST_LABEL_KEY = { high: 'trustHigh', medium: 'trustMedium', low: 'trustLow' };
+    document.getElementById('detailTrustBadge').textContent = TRUST_BADGE[trust.level];
+    document.getElementById('detailTrustLabel').textContent = t(TRUST_LABEL_KEY[trust.level]);
+    document.getElementById('detailTrustReasons').innerHTML = trust.reasons.map(function(r){
+      var color = r.positive ? 'var(--green)' : 'var(--red)';
+      return '<li style="color:' + color + ';">' + escapeHtml(t(r.key)) + '</li>';
+    }).join('');
+
+    lightbox.style.display = 'flex';
+  }
+
+  async function renderAll(){
+    await loadIncidents();
+    var total = incidents.length;
+    document.getElementById('statTotal').textContent = total;
+
+    var now = new Date();
+    var thisMonth = incidents.filter(function(i){
+      var d = new Date(i.timestamp);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+    document.getElementById('statMonth').textContent = thisMonth;
+
+    var crossingSet = {};
+    incidents.forEach(function(i){crossingSet[i.crossingId] = true;});
+    document.getElementById('statCrossings').textContent = Object.keys(crossingSet).length;
+
+    renderBars('typeBars', countBy(incidents, 'type'));
+    renderBars('crossingBars', countBy(incidents, 'crossingId'));
+    renderTable(document.getElementById('filterInput').value.trim());
+  }
+
+  document.getElementById('filterInput').addEventListener('input', function(){
+    renderTable(this.value.trim(), 1);
+  });
+  document.getElementById('filterClear').addEventListener('click', function(){
+    document.getElementById('filterInput').value = '';
+    renderTable('', 1);
+  });
+  document.getElementById('refreshBtn').addEventListener('click', renderAll);
+
+  document.getElementById('pagination').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-page]');
+    if (!btn || btn.disabled) return;
+    var targetPage = parseInt(btn.getAttribute('data-page'), 10);
+    if (isNaN(targetPage)) return;
+    renderTable(document.getElementById('filterInput').value.trim(), targetPage);
+    document.getElementById('pagination').scrollIntoView({behavior:'smooth', block:'nearest'});
+  });
+
+  renderAll().then(function(){ incidentsLoaded = true; });
+})();
+</script>
+</body>
+</html>
