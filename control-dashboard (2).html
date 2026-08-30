@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script>
+(function(){
+  var ok = false;
+  try { ok = sessionStorage.getItem('control-auth') === '1'; } catch(e){}
+  if (!ok) { window.location.replace('control-login.html'); }
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ผังควบคุมการเดินรถ — Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root {
+    --bg-main: #f4f6f9;
+    --bg-card: #ffffff;
+    --border-color: #e2e8f0;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --primary: #2563eb;
+    --primary-glow: rgba(37, 99, 235, 0.15);
+    --danger: #dc2626;
+    --danger-bg: #ffeeef;
+    --success: #16a34a;
+    --radius: 12px;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  }
+  html[data-theme="dark"] {
+    --bg-main: #0f172a;
+    --bg-card: #1e293b;
+    --border-color: #334155;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --primary: #3b82f6;
+    --primary-glow: rgba(59, 130, 246, 0.25);
+    --danger: #ef4444;
+    --danger-bg: #451a03;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg-main); color: var(--text-main);
+    font-family: 'Outfit', sans-serif; margin: 0; padding: 0;
+    min-height: 100vh; -webkit-font-smoothing: antialiased;
+  }
+  .top-bar { position: fixed; top: 16px; right: 16px; z-index: 80; display: flex; gap: 8px; }
+  .btn-action {
+    height: 40px; padding: 0 16px; border-radius: 20px; background: var(--bg-card);
+    border: 1px solid var(--border-color); color: var(--text-main); font-family: 'Outfit', sans-serif;
+    font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: var(--shadow);
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+  }
+  .btn-action:hover { border-color: var(--primary); }
+  .theme-toggle { width: 40px; padding: 0; font-size: 16px; border-radius: 50%; }
+
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 60px; }
+  header { margin-bottom: 24px; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--primary); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  
+  h1 { font-size: 26px; font-weight: 700; margin: 0 0 6px; }
+  .sub { font-size: 14px; color: var(--text-muted); margin: 0; }
+  .region-chip {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+    background: var(--primary); color: #fff; padding: 6px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; box-shadow: 0 2px 6px var(--primary-glow);
+  }
+
+  .dashboard-grid {
+    display: grid; grid-template-columns: 1fr; gap: 20px;
+  }
+  @media(min-width: 900px) {
+    .dashboard-grid { grid-template-columns: 1fr 1.2fr; }
+  }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius);
+    padding: 16px 12px; text-align: center; box-shadow: var(--shadow);
+  }
+  .stat-card .num { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; color: var(--primary); }
+  .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius);
+    padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: 15px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; margin: 0 0 16px; color: var(--text-muted); }
+
+  .map-wrap { width: 100%; background: var(--bg-main); border-radius: 8px; overflow: hidden; position: relative; min-height: 350px; }
+  .map-wrap svg { width: 100%; height: auto; display: block; }
+  .province-path { stroke: var(--border-color); stroke-width: 0.8; transition: fill 0.2s; }
+  .province-path.dimmed { opacity: 0.2; }
+  .province-path.mine { stroke: var(--primary); stroke-width: 1.5; cursor: pointer; }
+
+  .feed-list { max-height: 480px; overflow-y: auto; padding-right: 4px; }
+  .feed-item {
+    background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 10px;
+    padding: 14px; margin-bottom: 10px; cursor: pointer; transition: transform 0.15s, border-color 0.15s;
+  }
+  .feed-item:hover { transform: translateY(-2px); border-color: var(--primary); }
+  .feed-item.is-new { border-left: 4px solid var(--danger); background: var(--danger-bg); }
+  .feed-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .badge { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 3px 8px; border-radius: 6px; background: var(--border-color); color: var(--text-main); }
+  .badge-new { background: var(--danger); color: #fff; font-weight: 700; }
+  .place { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+  .note { font-size: 13.5px; color: var(--text-main); margin-top: 4px; line-height: 1.4; }
+  .time { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; }
+
+  .empty { color: var(--text-muted); font-size: 13px; text-align: center; padding: 30px; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="btn-action theme-toggle" id="themeToggle" type="button">☀️</button>
+  <button class="btn-action" id="logoutBtn" type="button">ออกจากระบบ</button>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><span class="live-dot"></span> Live Command Center</div>
+    <h1>ผังควบคุมการเดินรถ</h1>
+    <p class="sub">ระบบติดตามและตรวจสอบเหตุอันตรายจุดตัดทางรถไฟแบบเรียลไทม์</p>
+    <div class="region-chip" id="regionChip">📍 กำลังโหลดข้อมูลภาค...</div>
+  </header>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">เหตุทั้งหมดในภาค</div></div>
+    <div class="stat-card"><div class="num" id="statToday">0</div><div class="lbl">เกิดขึ้นวันนี้</div></div>
+    <div class="stat-card"><div class="num" id="statNew">0</div><div class="lbl">ใหม่ (30 นาทีล่าสุด)</div></div>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="card">
+      <h2>แผนที่พื้นที่รับผิดชอบ</h2>
+      <div class="map-wrap" id="mapWrap"><div class="empty">กำลังโหลดแผนที่ภูมิภาค...</div></div>
+    </div>
+    
+    <div class="card">
+      <h2>รายการเหตุการณ์ล่าสุด</h2>
+      <div class="feed-list" id="feedList"><div class="empty">กำลังโหลดข้อมูลเหตุการณ์...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // โครงสร้าง JavaScript หลักยังคงทำงานร่วมกับระบบเดิมของคุณได้อย่างราบรื่น
+  const THEME_KEY = 'railway-theme';
+  const toggleBtn = document.getElementById('themeToggle');
+  
+  function applyTheme(mode) {
+    if (mode === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      toggleBtn.textContent = '🌙';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      toggleBtn.textContent = '☀️';
+    }
+  }
+  
+  let savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+  applyTheme(savedTheme);
+  
+  toggleBtn.addEventListener('click', () => {
+    let isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    let next = isDark ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem(THEME_KEY, next);
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    sessionStorage.clear();
+    window.location.href = 'control-login.html';
+  });
+</script>
+</body>
+</html>
