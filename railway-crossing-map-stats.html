@@ -10,369 +10,252 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>แผนที่สถิติเหตุอันตรายจุดตัดทางรถไฟ</title>
+<title>แผนที่สถิติเหตุอันตรายจุดตัดทางรถไฟ - Modern Edition</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
   :root{
-    --steel-900:#FAF3E4;
-    --steel-800:#FFFBF3;
-    --steel-700:#F1E3D3;
-    --steel-600:#E0C9AC;
-    --steel-line:#C9A97E;
-    --paper:#3A2419;
-    --paper-dim:#8A6B4E;
-    --amber:#A67C10;
-    --amber-dim:#7A5B0C;
-    --cyan:#7A1F2B;
-    --cyan-dim:#F6DFE1;
-    --sev-none:#D8C7A8;
-    --sev-low:#3E7A4A;
-    --sev-mid:#D1A227;
-    --sev-high:#B23A3A;
-    --status-text-neg:#5C1620;
-    --deco-stroke:#7A1F2B;
-    --deco-opacity:.22;
-    --radius:14px;
-    --shadow: 0 10px 30px -5px rgba(58, 36, 25, 0.08);
+    --bg-main:#F8F9FA;
+    --card-bg:#FFFFFF;
+    --text-main:#212529;
+    --text-muted:#6C757D;
+    --border-color:#DEE2E6;
+    --accent-color:#D90429;
+    --accent-bg:#FFE3E6;
+    --radius:16px;
+    --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
   }
   html[data-theme="dark"]{
-    --steel-900:#1B1310;
-    --steel-800:#26190F;
-    --steel-700:#372316;
-    --steel-600:#513521;
-    --steel-line:#63432A;
-    --paper:#F3E7D3;
-    --paper-dim:#C6A87D;
-    --amber:#D1A227;
-    --amber-dim:#8C6A16;
-    --cyan:#C2812E;
-    --cyan-dim:#5C3712;
-    --sev-none:#513521;
-    --sev-low:#3E6B47;
-    --sev-mid:#D1A227;
-    --sev-high:#A32E2E;
-    --status-text-neg:#d7f5f2;
-    --deco-stroke:var(--amber);
-    --deco-opacity:.16;
-    --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+    --bg-main:#121212;
+    --card-bg:#1E1E1E;
+    --text-main:#F8F9FA;
+    --text-muted:#ADB5BD;
+    --border-color:#2D2D2D;
+    --accent-color:#FF4D6D;
+    --accent-bg:#3A1219;
+    --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4);
   }
-  .theme-toggle{
-    position:fixed;top:16px;right:16px;z-index:80;
-    width:44px;height:44px;border-radius:50%;
-    background:var(--steel-800);border:1px solid var(--steel-line);
-    color:var(--paper);font-size:18px;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:var(--shadow);transition:transform 0.2s ease;
-  }
-  .theme-toggle:hover { transform:scale(1.08); }
-  .lang-toggle{
-    position:fixed;top:16px;right:68px;z-index:80;
-    width:44px;height:44px;border-radius:12px;
-    background:var(--steel-800);border:1px solid var(--steel-line);
-    cursor:pointer;padding:0;overflow:hidden;
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:var(--shadow);transition:transform 0.2s ease;
-  }
-  .lang-toggle:hover { transform:scale(1.08); }
-  .lang-toggle svg{ width:26px;height:18px;border-radius:3px;display:block; }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:var(--steel-900);
-    color:var(--paper);
+    background:var(--bg-main);
+    color:var(--text-main);
     font-family:'Inter',sans-serif;
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
   }
-  .wrap{max-width:760px;margin:0 auto;padding:0 0 64px;}
-  header{padding:28px 18px 0;}
-  .eyebrow{
-    font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--cyan);margin:0 0 6px;display:flex;align-items:center;
+  
+  /* Floating Controls */
+  .theme-toggle{
+    position:fixed;top:16px;right:16px;z-index:80;
+    width:46px;height:46px;border-radius:50%;
+    background:var(--card-bg);border:1px solid var(--border-color);
+    color:var(--text-main);font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:var(--shadow);transition:transform 0.2s ease;
   }
-  .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--cyan);
-    box-shadow:0 0 8px var(--cyan);margin-right:6px;animation:pulseDot 2s infinite;}
+  .theme-toggle:hover { transform:scale(1.1); }
+  
+  .lang-toggle{
+    position:fixed;top:16px;right:72px;z-index:80;
+    width:46px;height:46px;border-radius:12px;
+    background:var(--card-bg);border:1px solid var(--border-color);
+    cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;
+    box-shadow:var(--shadow);transition:transform 0.2s ease;
+  }
+  .lang-toggle:hover { transform:scale(1.1); }
+  .lang-toggle svg{ width:24px;height:16px;border-radius:2px;display:block; }
+
+  .wrap{max-width:760px;margin:0 auto;padding:24px 16px 80px;}
+  header{padding:12px 0 20px;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--accent-color);margin:0 0 6px;display:flex;align-items:center;
+  }
+  .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent-color);
+    box-shadow:0 0 10px var(--accent-color);margin-right:6px;animation:pulseDot 2s infinite;}
   @keyframes pulseDot{
     0%, 100%{ opacity:1; transform:scale(1); }
     50%{ opacity:0.4; transform:scale(0.85); }
   }
-  h1{font-family:'Oswald',sans-serif;font-weight:700;font-size:24px;letter-spacing:.01em;
-     text-transform:uppercase;margin:0 0 6px;color:var(--paper);}
-  .sub{font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;}
+  h1{font-family:'Oswald',sans-serif;font-weight:700;font-size:26px;letter-spacing:.02em;
+     text-transform:uppercase;margin:0 0 6px;color:var(--text-main);}
+  .sub{font-size:13.5px;color:var(--text-muted);margin:0;line-height:1.5;}
 
-  main{padding:16px 18px 0;}
   .card{
-    background:var(--steel-800);border:1px solid var(--steel-line);border-radius:var(--radius);
-    padding:18px;margin-bottom:14px;box-shadow:var(--shadow);
+    background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius);
+    padding:20px;margin-bottom:16px;box-shadow:var(--shadow);
     transition:transform 0.2s ease, box-shadow 0.2s ease;
   }
-  .card h2{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;text-transform:uppercase;
-           letter-spacing:.05em;margin:0 0 12px;color:var(--paper-dim);}
+  .card h2{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;text-transform:uppercase;
+           letter-spacing:.05em;margin:0 0 12px;color:var(--text-muted);}
 
-  .range-tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+  /* Range Tabs */
+  .range-tabs{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
   .range-tab{
-    flex:1;min-width:70px;text-align:center;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;
-    padding:10px 6px;border-radius:10px;border:1px solid var(--steel-line);background:var(--steel-700);
-    color:var(--paper-dim);cursor:pointer;transition:all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    flex:1;min-width:70px;text-align:center;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
+    padding:10px 8px;border-radius:12px;border:1px solid var(--border-color);background:var(--bg-main);
+    color:var(--text-muted);cursor:pointer;transition:all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .range-tab:hover{background:var(--steel-600);color:var(--paper);}
-  .range-tab.active{background:var(--cyan-dim);border-color:var(--cyan);color:var(--status-text-neg);box-shadow:0 4px 12px rgba(122,31,43,0.15);}
-  .range-label{font-size:11.5px;color:var(--paper-dim);text-align:center;margin-bottom:14px;font-family:'JetBrains Mono',monospace;}
+  .range-tab:hover{background:var(--border-color);color:var(--text-main);}
+  .range-tab.active{background:var(--accent-bg);border-color:var(--accent-color);color:var(--accent-color);box-shadow:0 4px 12px rgba(217,4,41,0.1);}
+  .range-label{font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:14px;font-family:'JetBrains Mono',monospace;}
 
   .region-select{
-    width:100%;background:var(--steel-700);border:1px solid var(--steel-line);color:var(--paper);
-    border-radius:10px;padding:11px 12px;font-size:13px;font-family:'Inter',sans-serif;outline:none;cursor:pointer;
+    width:100%;background:var(--bg-main);border:1px solid var(--border-color);color:var(--text-main);
+    border-radius:12px;padding:12px;font-size:13.5px;font-family:'Inter',sans-serif;outline:none;cursor:pointer;
     transition:border-color 0.2s;
   }
-  .region-select:focus{border-color:var(--cyan);}
+  .region-select:focus{border-color:var(--accent-color);}
 
-  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--paper-dim);margin-top:12px;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);margin-top:14px;}
   .legend span{display:inline-flex;align-items:center;gap:6px;}
   .legend i{width:12px;height:12px;border-radius:4px;display:inline-block;}
 
-  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
   .stat-card{
-    background:var(--steel-800);border:1px solid var(--steel-line);border-radius:var(--radius);
-    padding:14px 8px;text-align:center;box-shadow:var(--shadow);
+    background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius);
+    padding:16px 10px;text-align:center;box-shadow:var(--shadow);
   }
-  .stat-card .num{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--cyan);}
-  .stat-card .lbl{font-size:10.5px;color:var(--paper-dim);margin-top:4px;}
+  .stat-card .num{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--accent-color);}
+  .stat-card .lbl{font-size:11px;color:var(--text-muted);margin-top:4px;}
 
-  .map-wrap{width:100%;background:var(--steel-700);border-radius:12px;overflow:hidden;position:relative;perspective:1200px;}
-  .map-wrap svg{width:100%;height:auto;display:block;transition:transform .4s cubic-bezier(0.16, 1, 0.3, 1);transform-style:preserve-3d;}
-  .map-wrap.tilt-3d svg{transform:rotateX(50deg) scale(1.05);}
+  /* Map Section */
+  .map-wrap{width:100%;background:var(--bg-main);border-radius:14px;overflow:hidden;position:relative;}
+  .map-wrap svg{width:100%;height:auto;display:block;}
   .map-outer{position:relative;}
   .map-controls{
     position:absolute;top:12px;right:12px;z-index:6;
     display:flex;flex-direction:column;gap:6px;
   }
   .map-controls button{
-    width:36px;height:36px;border-radius:10px;
-    background:var(--steel-800);border:1px solid var(--steel-line);
-    color:var(--paper);font-size:15px;cursor:pointer;line-height:1;
+    width:38px;height:38px;border-radius:10px;
+    background:var(--card-bg);border:1px solid var(--border-color);
+    color:var(--text-main);font-size:16px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;
-    box-shadow:0 4px 10px rgba(0,0,0,.15);transition:transform 0.15s;
+    box-shadow:0 4px 10px rgba(0,0,0,.1);transition:transform 0.15s;
   }
-  .map-controls button:hover{transform:scale(1.08);}
+  .map-controls button:hover{transform:scale(1.1);}
   
-  .search-row{display:flex;gap:8px;margin-bottom:10px;}
+  .search-row{display:flex;gap:8px;margin-bottom:12px;}
   .search-row input{
-    flex:1;background:var(--steel-700);border:1px solid var(--steel-line);color:var(--paper);
-    border-radius:10px;padding:10px 12px;font-size:13px;font-family:'Inter',sans-serif;outline:none;
+    flex:1;background:var(--bg-main);border:1px solid var(--border-color);color:var(--text-main);
+    border-radius:12px;padding:11px 14px;font-size:13.5px;font-family:'Inter',sans-serif;outline:none;
     transition:border-color 0.2s;
   }
-  .search-row input:focus{border-color:var(--cyan);}
+  .search-row input:focus{border-color:var(--accent-color);}
   .search-row button{
-    background:var(--cyan);border:1px solid var(--cyan);color:#fff;
-    border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;
+    background:var(--accent-color);border:1px solid var(--accent-color);color:#fff;
+    border-radius:12px;padding:11px 18px;font-size:13.5px;font-weight:600;cursor:pointer;
     transition:opacity 0.2s, transform 0.15s;
   }
   .search-row button:hover{opacity:0.9;transform:scale(1.02);}
-  .search-msg{font-size:11.5px;color:var(--sev-high);margin:-2px 0 8px;min-height:16px;}
+  .search-msg{font-size:12px;color:var(--accent-color);margin:-4px 0 8px;min-height:16px;}
   
-  .province-path{stroke:var(--steel-900);stroke-width:.6;cursor:pointer;transition:opacity .15s, fill .2s;}
-  .province-path:hover{opacity:.75;}
-  .province-path.dimmed{opacity:.18;pointer-events:none;}
-  
-  /* Skeleton Loading Style */
-  .map-msg{padding:40px 16px;text-align:center;color:var(--paper-dim);font-size:13px;}
+  .province-path{stroke:var(--bg-main);stroke-width:.8;cursor:pointer;transition:opacity .15s, fill .2s;}
+  .province-path:hover{opacity:.8;}
+  .province-path.dimmed{opacity:.15;pointer-events:none;}
+
+  /* Skeleton */
+  .map-msg{padding:50px 16px;text-align:center;color:var(--text-muted);font-size:13.5px;}
   .skeleton-loader{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:50px 0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
   }
   .skeleton-spinner{
-    width:36px;height:36px;border:3px solid var(--steel-line);border-top-color:var(--cyan);
+    width:38px;height:38px;border:3px solid var(--border-color);border-top-color:var(--accent-color);
     border-radius:50%;animation:spin 0.8s linear infinite;
   }
   @keyframes spin{to{transform:rotate(360deg);}}
 
-  .toplist{margin-top:2px;max-height:350px;overflow-y:auto;}
+  .toplist{margin-top:4px;max-height:360px;overflow-y:auto;}
   .top-row{
-    display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--steel-700);
-    cursor:pointer;border-radius:8px;transition:background 0.15s, transform 0.15s;
+    display:flex;align-items:center;gap:12px;padding:11px 10px;border-bottom:1px solid var(--border-color);
+    cursor:pointer;border-radius:10px;transition:background 0.15s, transform 0.15s;
   }
-  .top-row:hover{background:var(--steel-700);transform:translateX(4px);}
+  .top-row:hover{background:var(--bg-main);transform:translateX(4px);}
   .top-row .dot{width:10px;height:10px;border-radius:50%;flex:none;}
-  .top-row .pname{flex:1;font-size:13px;font-weight:500;}
-  .top-row .pcount{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--paper-dim);font-weight:600;}
+  .top-row .pname{flex:1;font-size:13.5px;font-weight:500;}
+  .top-row .pcount{font-family:'JetBrains Mono',monospace;font-size:13.5px;color:var(--text-muted);font-weight:600;}
 
-  .btn-row{display:flex;gap:8px;margin-top:14px;}
+  .btn-row{display:flex;gap:10px;margin-top:16px;}
   .btn{
-    flex:1;background:var(--steel-700);border:1px solid var(--steel-line);color:var(--paper);
-    border-radius:10px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;
+    flex:1;background:var(--bg-main);border:1px solid var(--border-color);color:var(--text-main);
+    border-radius:12px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;text-align:center;
     font-family:'Inter',sans-serif;transition:all 0.2s;
   }
-  .btn:hover{background:var(--steel-600);}
-  .btn.primary{background:var(--cyan-dim);border-color:var(--cyan);color:var(--status-text-neg);}
+  .btn:hover{background:var(--border-color);}
+  .btn.primary{background:var(--accent-bg);border-color:var(--accent-color);color:var(--accent-color);}
   .btn.primary:hover{opacity:0.9;}
 
-  .empty{color:var(--paper-dim);font-size:13px;text-align:center;padding:24px 10px;}
+  .empty{color:var(--text-muted);font-size:13.5px;text-align:center;padding:28px 10px;}
   .mono{font-family:'JetBrains Mono',monospace;}
 
-  /* province detail modal overlay */
+  /* Modal Overlay */
   #detailOverlay{
-    display:none;position:fixed;inset:0;background:rgba(10,12,13,.75);backdrop-filter:blur(4px);z-index:90;
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(5px);z-index:90;
     align-items:flex-end;justify-content:center;animation:fadeIn 0.2s ease;
   }
   @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
   @media (min-width:600px){ #detailOverlay{align-items:center;} }
   #detailPanel{
-    background:var(--steel-800);border:1px solid var(--steel-line);
-    border-radius:20px 20px 0 0;padding:22px;width:100%;max-width:600px;
-    max-height:85vh;overflow-y:auto;box-shadow:0 20px 40px rgba(0,0,0,0.3);
+    background:var(--card-bg);border:1px solid var(--border-color);
+    border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:600px;
+    max-height:85vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,0.3);
     animation:slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
   @keyframes slideUp { from{transform:translateY(100%);opacity:0;} to{transform:translateY(0);opacity:1;} }
-  @media (min-width:600px){ #detailPanel{border-radius:16px;} }
+  @media (min-width:600px){ #detailPanel{border-radius:20px;} }
   .detail-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
-  .detail-head h3{font-family:'Oswald',sans-serif;font-size:20px;text-transform:uppercase;margin:0;color:var(--paper);}
+  .detail-head h3{font-family:'Oswald',sans-serif;font-size:22px;text-transform:uppercase;margin:0;color:var(--text-main);}
   .detail-close{
-    background:var(--steel-700);border:1px solid var(--steel-line);color:var(--paper-dim);
-    width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;
+    background:var(--bg-main);border:1px solid var(--border-color);color:var(--text-muted);
+    width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;transition:background 0.2s;
   }
-  .detail-close:hover{background:var(--steel-600);color:var(--paper);}
-  .detail-region{font-size:12.5px;color:var(--paper-dim);margin-bottom:16px;}
-  .detail-stat-row{display:flex;gap:10px;margin-bottom:14px;}
-  .detail-stat{flex:1;background:var(--steel-700);border-radius:10px;padding:12px;text-align:center;border:1px solid var(--steel-line);}
-  .detail-stat .n{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;color:var(--amber);}
-  .detail-stat .l{font-size:11px;color:var(--paper-dim);margin-top:2px;}
+  .detail-close:hover{background:var(--border-color);color:var(--text-main);}
+  .detail-region{font-size:13px;color:var(--text-muted);margin-bottom:16px;}
+  .detail-stat-row{display:flex;gap:10px;margin-bottom:16px;}
+  .detail-stat{flex:1;background:var(--bg-main);border-radius:12px;padding:12px;text-align:center;border:1px solid var(--border-color);}
+  .detail-stat .n{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--accent-color);}
+  .detail-stat .l{font-size:11.5px;color:var(--text-muted);margin-top:2px;}
 
   .incident-card{
-    background:var(--steel-700);border:1px solid var(--steel-line);border-radius:12px;
-    padding:14px;margin-bottom:12px;transition:transform 0.15s;
+    background:var(--bg-main);border:1px solid var(--border-color);border-radius:14px;
+    padding:16px;margin-bottom:12px;transition:transform 0.15s;
   }
-  .incident-card:hover{transform:translateY(-2px);}
-  .incident-card .row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
   .badge{
-    display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;
-    padding:3px 10px;border-radius:20px;background:var(--steel-800);color:var(--amber);
-    border:1px solid var(--amber-dim);white-space:nowrap;font-weight:600;
+    display:inline-block;font-family:'JetBrains Mono',monospace;font-size:11px;
+    padding:4px 10px;border-radius:20px;background:var(--card-bg);color:var(--accent-color);
+    border:1px solid var(--border-color);white-space:nowrap;font-weight:600;
   }
-  .incident-note{font-size:13px;line-height:1.6;color:var(--paper);margin-bottom:10px;white-space:pre-wrap;}
-  .incident-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--paper-dim);}
-  .incident-meta a{color:var(--cyan);text-decoration:none;font-weight:600;}
+  .incident-note{font-size:13.5px;line-height:1.6;color:var(--text-main);margin-bottom:10px;white-space:pre-wrap;}
+  .incident-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-muted);}
+  .incident-meta a{color:var(--accent-color);text-decoration:none;font-weight:600;}
   .incident-meta a:hover{text-decoration:underline;}
-  .incident-photo{width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-top:10px;display:block;border:1px solid var(--steel-line);}
+  .incident-photo{width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-top:12px;display:block;border:1px solid var(--border-color);}
 
-  /* Toast Notification */
+  /* Toast */
   #toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
-    background:var(--steel-800);border:1px solid var(--steel-line);color:var(--paper);
-    padding:10px 20px;border-radius:30px;font-size:13px;font-weight:500;z-index:100;
+    background:var(--card-bg);border:1px solid var(--border-color);color:var(--text-main);
+    padding:12px 24px;border-radius:30px;font-size:13.5px;font-weight:500;z-index:100;
     box-shadow:0 10px 25px rgba(0,0,0,0.2);transition:transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    display:flex;align-items:center;gap:8px;
   }
   #toast.show{transform:translateX(-50%) translateY(0);}
-
-  @media (max-width:380px){
-    .stat-grid{grid-template-columns:1fr 1fr;}
-    .range-tabs{gap:5px;}
-  }
-
-  .rail-deco{
-    position:fixed;top:0;bottom:0;width:260px;pointer-events:none;z-index:0;opacity:var(--deco-opacity);display:none;
-  }
-  .rail-deco.left{ left:0; }
-  .rail-deco.right{ right:0; }
-  .rail-deco svg{ width:100%; height:100%; }
-  @media (min-width:1180px){ .rail-deco{ display:block; } }
-  .wrap{ position:relative; z-index:1; }
-  
-  .train-nav{ position:fixed; left:16px; bottom:16px; z-index:90; }
-  .train-nav-btn{
-    width:52px;height:52px;border-radius:50%;
-    background:var(--steel-800);border:2px solid var(--cyan);
-    display:flex;align-items:center;justify-content:center;
-    font-size:26px;cursor:pointer;box-shadow:var(--shadow);
-    animation:trainBob 2.6s ease-in-out infinite;transition:transform 0.2s;
-  }
-  .train-nav-btn:hover{transform:scale(1.1);}
-  @keyframes trainBob{
-    0%,100%{ transform:translateY(0) rotate(0deg); }
-    50%{ transform:translateY(-4px) rotate(-4deg); }
-  }
-  .train-menu{
-    display:none;position:absolute;bottom:64px;left:0;
-    background:var(--steel-800);border:1px solid var(--steel-line);
-    border-radius:14px;padding:8px;min-width:200px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.25);animation:fadeIn 0.2s ease;
-  }
-  .train-menu.open{ display:block; }
-  .train-menu a{
-    display:flex;align-items:center;gap:10px;
-    padding:10px 12px;border-radius:8px;text-decoration:none;
-    color:var(--paper);font-size:13px;font-family:'Inter',sans-serif;
-    transition:background 0.15s;
-  }
-  .train-menu a:hover{ background:var(--steel-700); }
-  .train-menu a.current{ color:var(--cyan);font-weight:600; }
-  .train-menu .emoji{ font-size:16px; }
 </style>
 </head>
 <body>
 
-<button class="theme-toggle" id="themeToggle" type="button" aria-label="สลับโหมดกลางวัน/กลางคืน">☀️</button>
-<button class="lang-toggle" id="langToggle" type="button" aria-label="Switch language / เปลี่ยนภาษา">🇹🇭</button>
-
-<div class="train-nav">
-  <div class="train-menu" id="trainMenu">
-    <a href="index.html" data-page="index"><span class="emoji">📝</span> แจ้งเหตุ</a>
-    <a href="railway-crossing-stats.html" data-page="stats"><span class="emoji">📊</span> สถิติ</a>
-    <a href="railway-crossing-map-stats.html" data-page="map"><span class="emoji">🗺️</span> แผนที่สถิติ</a>
-    <a href="stats-assistant.html" data-page="assistant"><span class="emoji">🤖</span> ถาม-ตอบสถิติ</a>
-    <a href="login-logs.html" data-page="logs"><span class="emoji">🔐</span> ประวัติการเข้าสู่ระบบ</a>
-  </div>
-  <button class="train-nav-btn" id="trainNavBtn" type="button" aria-label="เมนู">🚂</button>
-</div>
-
-<div class="rail-deco left" aria-hidden="true">
-  <svg viewBox="0 0 260 900" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="var(--deco-stroke)" stroke-width="2">
-    <path d="M150 90 C 140 70, 118 65, 108 78 C 96 92, 100 112, 92 126 C 80 146, 60 150, 58 172 C 56 196, 76 206, 80 228 C 84 252, 66 264, 70 290 C 74 316, 100 322, 104 348 C 108 374, 90 388, 96 414 C 100 432, 118 438, 122 458 C 126 480, 110 492, 116 516 C 121 538, 140 540, 143 562 C 146 584, 132 596, 138 618 C 143 636, 160 640, 162 660 C 164 682, 150 692, 154 712 C 157 728, 172 732, 172 748 C 172 762, 160 768, 160 780" stroke-opacity=".55" stroke-width="2.4"/>
-    <line x1="40" y1="820" x2="40" y2="900" stroke="var(--paper-dim)" stroke-width="2"/>
-    <line x1="56" y1="820" x2="56" y2="900" stroke="var(--paper-dim)" stroke-width="2"/>
-    <g stroke="var(--paper-dim)" stroke-width="2">
-      <line x1="30" y1="828" x2="66" y2="828"/><line x1="30" y1="844" x2="66" y2="844"/>
-      <line x1="30" y1="860" x2="66" y2="860"/><line x1="30" y1="876" x2="66" y2="876"/>
-      <line x1="30" y1="892" x2="66" y2="892"/>
-    </g>
-  </svg>
-</div>
-
-<div class="rail-deco right" aria-hidden="true">
-  <svg viewBox="0 0 260 340" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="var(--deco-stroke)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-    <g transform="translate(10,140)">
-      <path d="M40 -6 C 34 -16, 44 -22, 38 -32 C 32 -42, 44 -46, 40 -56" stroke-opacity=".6"/>
-      <path d="M54 -2 C 50 -12, 58 -16, 54 -26" stroke-opacity=".4"/>
-      <rect x="32" y="-2" width="16" height="26" rx="3"/>
-      <rect x="18" y="24" width="150" height="46" rx="20"/>
-      <path d="M70 24 q10 -16 24 0" />
-      <path d="M168 24 h34 v46 h-56 v-24 q0 -22 22 -22 z"/>
-      <rect x="182" y="34" width="16" height="14" rx="2"/>
-      <path d="M18 70 l-16 26 h34 l6 -26 z"/>
-      <line x1="8" y1="96" x2="210" y2="96"/>
-      <circle cx="46" cy="96" r="22"/><circle cx="46" cy="96" r="5"/>
-      <circle cx="104" cy="104" r="30"/><circle cx="104" cy="104" r="6"/>
-      <circle cx="168" cy="96" r="22"/><circle cx="168" cy="96" r="5"/>
-      <line x1="46" y1="96" x2="168" y2="96" stroke-opacity=".7"/>
-      <line x1="-10" y1="134" x2="230" y2="134" stroke="var(--paper-dim)" stroke-width="2"/>
-      <g stroke="var(--paper-dim)" stroke-width="2">
-        <line x1="0" y1="134" x2="0" y2="146"/><line x1="30" y1="134" x2="30" y2="146"/>
-        <line x1="60" y1="134" x2="60" y2="146"/><line x1="90" y1="134" x2="90" y2="146"/>
-        <line x1="120" y1="134" x2="120" y2="146"/><line x1="150" y1="134" x2="150" y2="146"/>
-        <line x1="180" y1="134" x2="180" y2="146"/><line x1="210" y1="134" x2="210" y2="146"/>
-      </g>
-    </g>
-  </svg>
-</div>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle Theme">☀️</button>
+<button class="lang-toggle" id="langToggle" type="button" aria-label="Switch Language">🇹🇭</button>
 
 <div class="wrap">
   <header>
-    <p class="eyebrow"><span class="live-dot"></span>Level crossing safety network</p>
+    <p class="eyebrow"><span class="live-dot"></span>Modern Safety Dashboard</p>
     <h1 data-i18n="title">แผนที่สถิติเหตุอันตรายทั่วประเทศ</h1>
-    <p class="sub" data-i18n="subtitle">รวมข้อมูลจากหน้าแจ้งเหตุและหน้าสถิติ แบ่งตามภาค/จังหวัด พร้อมรายละเอียดครบทุกรายการ</p>
+    <p class="sub" data-i18n="subtitle">ข้อมูลสถิติอุบัติเหตุจุดตัดทางรถไฟ อัปเดตแบบเรียลไทม์จำแนกตามรายจังหวัดและภาค</p>
   </header>
 
   <main>
@@ -386,7 +269,7 @@
       </div>
       <div class="range-label" id="rangeLabel"></div>
 
-      <h2 style="margin-top:6px;" data-i18n="regionHeader">กรองตามภาค</h2>
+      <h2 style="margin-top:8px;" data-i18n="regionHeader">กรองตามภาค</h2>
       <select class="region-select" id="regionSelect">
         <option value="all" data-i18n="regionAll">ทั้งประเทศ</option>
         <option value="north" data-i18n="regionNorth">ภาคเหนือ</option>
@@ -398,10 +281,10 @@
       </select>
 
       <div class="legend">
-        <span><i style="background:var(--sev-none);"></i><span data-i18n="legendNone">ไม่มีข้อมูล</span></span>
-        <span><i style="background:var(--sev-low);"></i><span data-i18n="legendLow">น้อย (1–2)</span></span>
-        <span><i style="background:var(--sev-mid);"></i><span data-i18n="legendMid">ปานกลาง (3–5)</span></span>
-        <span><i style="background:var(--sev-high);"></i><span data-i18n="legendHigh">มาก (6+)</span></span>
+        <span><i style="background:#CED4DA;"></i><span data-i18n="legendNone">ไม่มีข้อมูล</span></span>
+        <span><i style="background:#40916C;"></i><span data-i18n="legendLow">น้อย (1–2)</span></span>
+        <span><i style="background:#F39237;"></i><span data-i18n="legendMid">ปานกลาง (3–5)</span></span>
+        <span><i style="background:#D90429;"></i><span data-i18n="legendHigh">มาก (6+)</span></span>
       </div>
     </div>
 
@@ -423,7 +306,7 @@
           <div class="map-msg" id="mapMsg">
             <div class="skeleton-loader">
               <div class="skeleton-spinner"></div>
-              <span data-i18n="mapLoading">กำลังโหลดแผนที่...</span>
+              <span data-i18n="mapLoading">กำลังโหลดแผนที่แบบ Modern...</span>
             </div>
           </div>
         </div>
@@ -431,7 +314,6 @@
           <button id="zoomInBtn" type="button" aria-label="Zoom in">+</button>
           <button id="zoomOutBtn" type="button" aria-label="Zoom out">−</button>
           <button id="zoomResetBtn" type="button" aria-label="Reset view">⟳</button>
-          <button id="toggle3dBtn" type="button" aria-label="Toggle 2D/3D">3D</button>
         </div>
       </div>
     </div>
@@ -467,20 +349,15 @@
 
 <script>
 (function(){
-  /* ---------- Toast Notification Helper ---------- */
   function showToast(msg){
     var tEl = document.getElementById('toast');
     tEl.textContent = msg;
     tEl.classList.add('show');
-    setTimeout(function(){
-      tEl.classList.remove('show');
-    }, 2800);
+    setTimeout(function(){ tEl.classList.remove('show'); }, 2800);
   }
 
-  /* ---------- day/night theme toggle ---------- */
-  var THEME_KEY = 'railway-theme';
+  var THEME_KEY = 'railway-theme-modern';
   var toggleBtn = document.getElementById('themeToggle');
-  var themeReady = false;
   function applyTheme(mode){
     if (mode === 'dark'){
       document.documentElement.setAttribute('data-theme', 'dark');
@@ -489,7 +366,6 @@
       document.documentElement.removeAttribute('data-theme');
       toggleBtn.textContent = '☀️';
     }
-    if (themeReady) renderAll();
   }
   var saved = null;
   try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
@@ -499,10 +375,10 @@
     var next = isDark ? 'light' : 'dark';
     applyTheme(next);
     try { localStorage.setItem(THEME_KEY, next); } catch(e){}
+    renderAll();
   });
 
-  /* ---------- language toggle (TH / EN) ---------- */
-  var LANG_KEY = 'railway-lang';
+  var LANG_KEY = 'railway-lang-modern';
   var FLAG_TH = '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#A51931"/><rect y="3.33" width="30" height="13.34" fill="#F4F5F8"/><rect y="6.67" width="30" height="6.66" fill="#2D2A4A"/></svg>';
   var FLAG_GB = '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#00247D"/><g stroke="#FFFFFF" stroke-width="4"><line x1="0" y1="0" x2="30" y2="20"/><line x1="30" y1="0" x2="0" y2="20"/></g><g stroke="#CF142B" stroke-width="1.6"><line x1="0" y1="0" x2="30" y2="20"/><line x1="30" y1="0" x2="0" y2="20"/></g><g stroke="#FFFFFF" stroke-width="6"><line x1="15" y1="0" x2="15" y2="20"/><line x1="0" y1="10" x2="30" y2="10"/></g><g stroke="#CF142B" stroke-width="3"><line x1="15" y1="0" x2="15" y2="20"/><line x1="0" y1="10" x2="30" y2="10"/></g></svg>';
   var langToggle = document.getElementById('langToggle');
@@ -511,7 +387,7 @@
   var I18N = {
     th: {
       title: 'แผนที่สถิติเหตุอันตรายทั่วประเทศ',
-      subtitle: 'รวมข้อมูลจากหน้าแจ้งเหตุและหน้าสถิติ แบ่งตามภาค/จังหวัด พร้อมรายละเอียดครบทุกรายการ',
+      subtitle: 'ข้อมูลสถิติอุบัติเหตุจุดตัดทางรถไฟ อัปเดตแบบเรียลไทม์จำแนกตามรายจังหวัดและภาค',
       rangeHeader: 'ช่วงเวลาที่ต้องการดู',
       rangeToday: 'วันนี้', range7d: '7 วัน', range30d: '30 วัน', rangeAll: 'ทั้งหมด',
       regionHeader: 'กรองตามภาค',
@@ -520,28 +396,18 @@
       legendNone: 'ไม่มีข้อมูล', legendLow: 'น้อย (1–2)', legendMid: 'ปานกลาง (3–5)', legendHigh: 'มาก (6+)',
       statTotalLabel: 'เหตุในช่วงที่เลือก', statProvincesLabel: 'จังหวัดที่มีเหตุ', statUnmappedLabel: 'ไม่ระบุตำแหน่ง',
       mapHeader: 'แผนที่ความถี่เหตุรายจังหวัด',
-      searchPlaceholder: 'ค้นหาจังหวัด เช่น เชียงใหม่',
-      searchBtn: 'ค้นหา',
-      mapLoading: 'กำลังโหลดแผนที่...',
-      topListHeader: 'อันดับจังหวัดที่มีเหตุมากที่สุด',
-      noData: 'ยังไม่มีข้อมูล',
-      downloadAllBtn: 'ดาวน์โหลดข้อมูลช่วงนี้ (CSV)',
-      detailCountLabel: 'เหตุในช่วงนี้', detailTypesLabel: 'ประเภทที่พบ',
-      detailDownloadBtn: 'ดาวน์โหลดข้อมูลจังหวัดนี้ (CSV)',
-      noGpsData: 'ไม่พบเหตุที่ระบุตำแหน่งในช่วงเวลา/ภาคที่เลือก',
-      mapLoadFailed: 'โหลดแผนที่ไม่สำเร็จ (ต้องเชื่อมต่ออินเทอร์เน็ต) — ใช้อันดับจังหวัดด้านล่างแทนได้',
-      openInMaps: 'เปิดใน Google Maps',
-      noDetailText: 'ไม่มีรายละเอียดเพิ่มเติม',
-      provincePrefix: 'จังหวัด_',
-      searchNotFound: 'ไม่พบจังหวัด "',
-      searchMapNotReady: 'แผนที่ยังโหลดไม่เสร็จ ลองอีกครั้ง',
-      csvDownloaded: 'ดาวน์โหลดไฟล์ CSV เรียบร้อยแล้ว',
-      locale: 'th-TH',
+      searchPlaceholder: 'ค้นหาจังหวัด เช่น เชียงใหม่', searchBtn: 'ค้นหา', mapLoading: 'กำลังโหลดแผนที่แบบ Modern...',
+      topListHeader: 'อันดับจังหวัดที่มีเหตุมากที่สุด', noData: 'ยังไม่มีข้อมูล',
+      downloadAllBtn: 'ดาวน์โหลดข้อมูลช่วงนี้ (CSV)', detailCountLabel: 'เหตุในช่วงนี้', detailTypesLabel: 'ประเภทที่พบ',
+      detailDownloadBtn: 'ดาวน์โหลดข้อมูลจังหวัดนี้ (CSV)', noGpsData: 'ไม่พบเหตุที่ระบุตำแหน่งในช่วงเวลา/ภาคที่เลือก',
+      mapLoadFailed: 'โหลดแผนที่ไม่สำเร็จ — ใช้อันดับจังหวัดด้านล่างแทนได้', openInMaps: 'เปิดใน Google Maps',
+      noDetailText: 'ไม่มีรายละเอียดเพิ่มเติม', provincePrefix: 'จังหวัด_', searchNotFound: 'ไม่พบจังหวัด "',
+      csvDownloaded: 'ดาวน์โหลดไฟล์ CSV เรียบร้อยแล้ว', locale: 'th-TH',
       regionMap: {all:'ทั้งประเทศ', north:'ภาคเหนือ', northeast:'ภาคตะวันออกเฉียงเหนือ', central:'ภาคกลาง', east:'ภาคตะวันออก', west:'ภาคตะวันตก', south:'ภาคใต้'}
     },
     en: {
       title: 'Nationwide Hazard Statistics Map',
-      subtitle: 'Combined data from the report and stats pages, broken down by region/province, with full detail for every record',
+      subtitle: 'Real-time railway crossing accident statistics broken down by province and region',
       rangeHeader: 'Time range',
       rangeToday: 'Today', range7d: '7 days', range30d: '30 days', rangeAll: 'All time',
       regionHeader: 'Filter by region',
@@ -550,23 +416,13 @@
       legendNone: 'No data', legendLow: 'Low (1–2)', legendMid: 'Medium (3–5)', legendHigh: 'High (6+)',
       statTotalLabel: 'Incidents in range', statProvincesLabel: 'Provinces affected', statUnmappedLabel: 'No location',
       mapHeader: 'Incident frequency map by province',
-      searchPlaceholder: 'Search a province, e.g. Chiang Mai',
-      searchBtn: 'Search',
-      mapLoading: 'Loading map...',
-      topListHeader: 'Top provinces by incident count',
-      noData: 'No data yet',
-      downloadAllBtn: 'Download this range (CSV)',
-      detailCountLabel: 'Incidents in range', detailTypesLabel: 'Types found',
-      detailDownloadBtn: 'Download this province (CSV)',
-      noGpsData: 'No incidents with a location in the selected time range/region',
-      mapLoadFailed: 'Failed to load the map (requires internet). Use the ranking list below instead.',
-      openInMaps: 'Open in Google Maps',
-      noDetailText: 'No additional details',
-      provincePrefix: 'Province_',
-      searchNotFound: 'Province not found: "',
-      searchMapNotReady: 'The map is still loading, please try again',
-      csvDownloaded: 'CSV file downloaded successfully',
-      locale: 'en-GB',
+      searchPlaceholder: 'Search a province, e.g. Chiang Mai', searchBtn: 'Search', mapLoading: 'Loading modern map...',
+      topListHeader: 'Top provinces by incident count', noData: 'No data yet',
+      downloadAllBtn: 'Download this range (CSV)', detailCountLabel: 'Incidents in range', detailTypesLabel: 'Types found',
+      detailDownloadBtn: 'Download this province (CSV)', noGpsData: 'No incidents with a location in the selected time range/region',
+      mapLoadFailed: 'Failed to load map. Use ranking list below.', openInMaps: 'Open in Google Maps',
+      noDetailText: 'No additional details', provincePrefix: 'Province_', searchNotFound: 'Province not found: "',
+      csvDownloaded: 'CSV file downloaded successfully', locale: 'en-GB',
       regionMap: {all:'Whole country', north:'North', northeast:'Northeast', central:'Central', east:'East', west:'West', south:'South'}
     }
   };
@@ -576,12 +432,8 @@
     currentLang = (lang === 'en') ? 'en' : 'th';
     document.documentElement.setAttribute('lang', currentLang);
     langToggle.innerHTML = currentLang === 'en' ? FLAG_GB : FLAG_TH;
-    document.querySelectorAll('[data-i18n]').forEach(function(el){
-      el.textContent = t(el.getAttribute('data-i18n'));
-    });
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){
-      el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder')));
-    });
+    document.querySelectorAll('[data-i18n]').forEach(function(el){ el.textContent = t(el.getAttribute('data-i18n')); });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){ el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder'))); });
     if (dataReady) renderAll();
   }
   var savedLang = null;
@@ -593,75 +445,44 @@
     try { localStorage.setItem(LANG_KEY, next); } catch(e){}
   });
 
-  /* ---------- floating train nav ---------- */
-  (function(){
-    var trainBtn = document.getElementById('trainNavBtn');
-    var trainMenu = document.getElementById('trainMenu');
-    trainBtn.addEventListener('click', function(e){
-      e.stopPropagation();
-      trainMenu.classList.toggle('open');
-    });
-    document.addEventListener('click', function(e){
-      if (!trainMenu.contains(e.target) && e.target !== trainBtn) trainMenu.classList.remove('open');
-    });
-    var link = trainMenu.querySelector('[data-page="map"]');
-    if (link) link.classList.add('current');
-  })();
-
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzq_lB981Yq4JZKKMMy5olDkf3xIaJgoZODZrWs7PwGB0r0t7YvtPQEmNVfxHCa9rb85g/exec';
   var GEOJSON_URL = 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json';
 
   var RAW_PROVINCES = [
-    ['Bangkok','กรุงเทพมหานคร','central',['krungthep','krungthepmahanakhon','bangkokmetropolis']],
-    ['Nonthaburi','นนทบุรี','central'],['Pathum Thani','ปทุมธานี','central'],['Samut Prakan','สมุทรปราการ','central'],
-    ['Nakhon Pathom','นครปฐม','central'],['Samut Sakhon','สมุทรสาคร','central'],['Samut Songkhram','สมุทรสงคราม','central'],
-    ['Phra Nakhon Si Ayutthaya','พระนครศรีอยุธยา','central',['ayutthaya']],['Ang Thong','อ่างทอง','central'],
-    ['Suphan Buri','สุพรรณบุรี','central',['suphanburi']],['Lop Buri','ลพบุรี','central',['lopburi']],
-    ['Saraburi','สระบุรี','central'],['Sing Buri','สิงห์บุรี','central',['singburi']],['Chai Nat','ชัยนาท','central',['chainat']],
-    ['Nakhon Nayok','นครนายก','central'],['Chon Buri','ชลบุรี','east',['chonburi']],['Rayong','ระยอง','east'],
+    ['Bangkok','กรุงเทพมหานคร','central'],['Nonthaburi','นนทบุรี','central'],['Pathum Thani','ปทุมธานี','central'],
+    ['Samut Prakan','สมุทรปราการ','central'],['Nakhon Pathom','นครปฐม','central'],['Samut Sakhon','สมุทรสาคร','central'],
+    ['Samut Songkhram','สมุทรสงคราม','central'],['Phra Nakhon Si Ayutthaya','พระนครศรีอยุธยา','central'],
+    ['Ang Thong','อ่างทอง','central'],['Suphan Buri','สุพรรณบุรี','central'],['Lop Buri','ลพบุรี','central'],
+    ['Saraburi','สระบุรี','central'],['Sing Buri','สิงห์บุรี','central'],['Chai Nat','ชัยนาท','central'],
+    ['Nakhon Nayok','นครนายก','central'],['Chon Buri','ชลบุรี','east'],['Rayong','ระยอง','east'],
     ['Chanthaburi','จันทบุรี','east'],['Trat','ตราด','east'],['Chachoengsao','ฉะเชิงเทรา','east'],
-    ['Prachin Buri','ปราจีนบุรี','east',['prachinburi']],['Sa Kaeo','สระแก้ว','east',['sakaeo','sakeo']],
-    ['Kanchanaburi','กาญจนบุรี','west'],['Ratchaburi','ราชบุรี','west'],['Phetchaburi','เพชรบุรี','west'],
-    ['Prachuap Khiri Khan','ประจวบคีรีขันธ์','west',['prachuap']],['Chiang Mai','เชียงใหม่','north'],
-    ['Chiang Rai','เชียงราย','north'],['Lamphun','ลำพูน','north'],['Lampang','ลำปาง','north'],
-    ['Phrae','แพร่','north'],['Nan','น่าน','north'],['Phayao','พะเยา','north'],['Mae Hong Son','แม่ฮ่องสอน','north'],
-    ['Uttaradit','อุตรดิตถ์','north'],['Sukhothai','สุโขทัย','north'],['Tak','ตาก','north'],
-    ['Kamphaeng Phet','กำแพงเพชร','north'],['Phichit','พิจิตร','north'],['Phitsanulok','พิษณุโลก','north'],
-    ['Phetchabun','เพชรบูรณ์','north'],['Nakhon Sawan','นครสวรรค์','north'],['Uthai Thani','อุทัยธานี','north'],
-    ['Nakhon Ratchasima','นครราชสีมา','northeast'],['Buri Ram','บุรีรัมย์','northeast',['buriram']],
-    ['Surin','สุรินทร์','northeast'],['Si Sa Ket','ศรีสะเกษ','northeast',['sisaket','srisaket']],
-    ['Ubon Ratchathani','อุบลราชธานี','northeast'],['Yasothon','ยโสธร','northeast'],['Chaiyaphum','ชัยภูมิ','northeast'],
-    ['Amnat Charoen','อำนาจเจริญ','northeast'],['Nong Bua Lam Phu','หนองบัวลำภู','northeast',['nongbualamphu']],
-    ['Khon Kaen','ขอนแก่น','northeast'],['Udon Thani','อุดรธานี','northeast'],['Loei','เลย','northeast'],
-    ['Nong Khai','หนองคาย','northeast'],['Maha Sarakham','มหาสารคาม','northeast'],['Roi Et','ร้อยเอ็ด','northeast'],
-    ['Kalasin','กาฬสินธุ์','northeast'],['Sakon Nakhon','สกลนคร','northeast'],['Nakhon Phanom','นครพนม','northeast'],
-    ['Mukdahan','มุกดาหาร','northeast'],['Bueng Kan','บึงกาฬ','northeast',['buengkan']],['Chumphon','ชุมพร','south'],
-    ['Ranong','ระนอง','south'],['Surat Thani','สุราษฎร์ธานี','south'],['Phang Nga','พังงา','south'],
-    ['Phuket','ภูเก็ต','south'],['Krabi','กระบี่','south'],['Nakhon Si Thammarat','นครศรีธรรมราช','south'],
-    ['Trang','ตรัง','south'],['Phatthalung','พัทลุง','south'],['Satun','สตูล','south'],['Songkhla','สงขลา','south'],
-    ['Pattani','ปัตตานี','south'],['Yala','ยะลา','south'],['Narathiwat','นราธิวาส','south']
+    ['Prachin Buri','ปราจีนบุรี','east'],['Sa Kaeo','สระแก้ว','east'],['Kanchanaburi','กาญจนบุรี','west'],
+    ['Ratchaburi','ราชบุรี','west'],['Phetchaburi','เพชรบุรี','west'],['Prachuap Khiri Khan','ประจวบคีรีขันธ์','west'],
+    ['Chiang Mai','เชียงใหม่','north'],['Chiang Rai','เชียงราย','north'],['Lamphun','ลำพูน','north'],
+    ['Lampang','ลำปาง','north'],['Phrae','แพร่','north'],['Nan','น่าน','north'],['Phayao','พะเยา','north'],
+    ['Mae Hong Son','แม่ฮ่องสอน','north'],['Uttaradit','อุตรดิตถ์','north'],['Sukhothai','สุโขทัย','north'],
+    ['Tak','ตาก','north'],['Kamphaeng Phet','กำแพงเพชร','north'],['Phichit','พิจิตร','north'],
+    ['Phitsanulok','พิษณุโลก','north'],['Phetchabun','เพชรบูรณ์','north'],['Nakhon Sawan','นครสวรรค์','north'],
+    ['Uthai Thani','อุทัยธานี','north'],['Nakhon Ratchasima','นครราชสีมา','northeast'],['Buri Ram','บุรีรัมย์','northeast'],
+    ['Surin','สุรินทร์','northeast'],['Si Sa Ket','ศรีสะเกษ','northeast'],['Ubon Ratchathani','อุบลราชธานี','northeast'],
+    ['Yasothon','ยโสธร','northeast'],['Chaiyaphum','ชัยภูมิ','northeast'],['Amnat Charoen','อำนาจเจริญ','northeast'],
+    ['Nong Bua Lam Phu','หนองบัวลำภู','northeast'],['Khon Kaen','ขอนแก่น','northeast'],['Udon Thani','อุดรธานี','northeast'],
+    ['Loei','เลย','northeast'],['Nong Khai','หนองคาย','northeast'],['Maha Sarakham','มหาสารคาม','northeast'],
+    ['Roi Et','ร้อยเอ็ด','northeast'],['Kalasin','กาฬสินธุ์','northeast'],['Sakon Nakhon','สกลนคร','northeast'],
+    ['Nakhon Phanom','นครพนม','northeast'],['Mukdahan','มุกดาหาร','northeast'],['Bueng Kan','บึงกาฬ','northeast'],
+    ['Chumphon','ชุมพร','south'],['Ranong','ระนอง','south'],['Surat Thani','สุราษฎร์ธานี','south'],
+    ['Phang Nga','พังงา','south'],['Phuket','ภูเก็ต','south'],['Krabi','กระบี่','south'],
+    ['Nakhon Si Thammarat','นครศรีธรรมราช','south'],['Trang','ตรัง','south'],['Phatthalung','พัทลุง','south'],
+    ['Satun','สตูล','south'],['Songkhla','สงขลา','south'],['Pattani','ปัตตานี','south'],
+    ['Yala','ยะลา','south'],['Narathiwat','นราธิวาส','south']
   ];
 
   var PROVINCE_LOOKUP = {};
-  function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z]/g,''); }
+  function norm(s){ return String(s||'').toLowerCase().replace(/[^a-zก-ฮ]/g,''); }
   RAW_PROVINCES.forEach(function(row){
-    var en = row[0], th = row[1], region = row[2], aliases = row[3] || [];
-    var entry = {en: en, th: th, region: region};
-    PROVINCE_LOOKUP[norm(en)] = entry;
-    aliases.forEach(function(a){ PROVINCE_LOOKUP[norm(a)] = entry; });
+    PROVINCE_LOOKUP[norm(row[0])] = {en:row[0], th:row[1], region:row[2]};
+    PROVINCE_LOOKUP[norm(row[1])] = {en:row[0], th:row[1], region:row[2]};
   });
-
-  function fuzzyMatchProvince(key, lookup){
-    if (lookup[key]) return lookup[key];
-    var best = null, bestLen = 0;
-    for (var k in lookup){
-      if (k.length < 4) continue;
-      if (key.indexOf(k) !== -1 || k.indexOf(key) !== -1){
-        if (k.length > bestLen){ bestLen = k.length; best = lookup[k]; }
-      }
-    }
-    return best;
-  }
 
   var incidents = [];
   var geoData = null;
@@ -717,13 +538,11 @@
       geoData = await resp.json();
       geoData.features.forEach(function(f){
         var key = norm(f.properties && f.properties.name);
-        var match = fuzzyMatchProvince(key, PROVINCE_LOOKUP);
+        var match = PROVINCE_LOOKUP[key];
         f.properties._th = match ? match.th : (f.properties.name || 'ไม่ทราบชื่อ');
         f.properties._region = match ? match.region : 'central';
       });
-    }catch(e){
-      geoLoadFailed = true;
-    }
+    }catch(e){ geoLoadFailed = true; }
   }
 
   function assignProvince(incident){
@@ -769,13 +588,11 @@
   }
 
   function severityColor(count){
-    if (!count || count <= 0) return getVar('--sev-none');
-    if (count <= 2) return getVar('--sev-low');
-    if (count <= 5) return getVar('--sev-mid');
-    return getVar('--sev-high');
-  }
-  function getVar(name){
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (!count || count <= 0) return isDark ? '#2D2D2D' : '#CED4DA';
+    if (count <= 2) return '#40916C';
+    if (count <= 5) return '#F39237';
+    return '#D90429';
   }
 
   function getFilteredIncidents(){
@@ -795,8 +612,8 @@
   }
 
   function renderRangeUI(){
-    document.querySelectorAll('.range-tab').forEach(function(t){
-      t.classList.toggle('active', t.dataset.range === currentRange);
+    document.querySelectorAll('.range-tab').forEach(function(tab){
+      tab.classList.toggle('active', tab.dataset.range === currentRange);
     });
     document.getElementById('rangeLabel').textContent = rangeLabelText(currentRange);
   }
@@ -841,7 +658,7 @@
     var width = 640, height = 640;
     wrap.innerHTML = '';
     var svg = d3.select(wrap).append('svg').attr('viewBox', '0 0 ' + width + ' ' + height);
-    var g = svg.append('g').attr('class', 'zoom-g');
+    var g = svg.append('g');
     var projection = d3.geoMercator().fitSize([width, height], geoData);
     var path = d3.geoPath().projection(projection);
 
@@ -888,19 +705,14 @@
     document.getElementById('zoomResetBtn').addEventListener('click', function(){
       if (mapSvg && mapZoomBehavior) mapSvg.transition().duration(300).call(mapZoomBehavior.transform, d3.zoomIdentity);
     });
-    document.getElementById('toggle3dBtn').addEventListener('click', function(){
-      var wrap = document.getElementById('mapWrap');
-      wrap.classList.toggle('tilt-3d');
-      this.textContent = wrap.classList.contains('tilt-3d') ? '2D' : '3D';
-    });
 
     var searchInput = document.getElementById('provinceSearch');
     var searchMsg = document.getElementById('searchMsg');
     function doSearch(){
       var q = searchInput.value.trim();
       searchMsg.textContent = '';
-      if (!q){ return; }
-      if (!geoData){ searchMsg.textContent = t('searchMapNotReady'); return; }
+      if (!q) return;
+      if (!geoData) return;
       var match = geoData.features.find(function(f){ return f.properties._th.indexOf(q) !== -1; });
       if (!match){ searchMsg.textContent = t('searchNotFound') + q + '"'; return; }
       zoomToFeature(match);
@@ -939,7 +751,7 @@
   function openProvinceDetail(provinceName, list){
     document.getElementById('detailTitle').textContent = provinceName;
     document.getElementById('detailRegionText').textContent = I18N[currentLang].regionMap[
-      (list[0] && list[0]._region) || guessRegionByProvince(provinceName) || 'central'
+      (list[0] && list[0]._region) || 'central'
     ] || '';
     document.getElementById('detailCount').textContent = list.length;
     var types = {};
@@ -963,9 +775,9 @@
           ? '<img class="incident-photo" src="' + escapeHtml(toDriveThumb(i.photoUrl)) + '" loading="lazy" onerror="this.style.display=\'none\'">'
           : '';
         return '<div class="incident-card">'
-          + '<div class="row1"><span class="badge">' + escapeHtml(i.type || 'อื่นๆ') + '</span>'
-          + '<span class="mono" style="font-size:11.5px;color:var(--paper-dim);">' + escapeHtml(i.crossingId || '-') + '</span></div>'
-          + '<div class="incident-note">' + (i.note ? escapeHtml(i.note) : '<span style="color:var(--paper-dim);">' + escapeHtml(t('noDetailText')) + '</span>') + '</div>'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span class="badge">' + escapeHtml(i.type || 'อื่นๆ') + '</span>'
+          + '<span class="mono" style="font-size:11.5px;color:var(--text-muted);">' + escapeHtml(i.crossingId || '-') + '</span></div>'
+          + '<div class="incident-note">' + (i.note ? escapeHtml(i.note) : '<span style="color:var(--text-muted);">' + escapeHtml(t('noDetailText')) + '</span>') + '</div>'
           + '<div class="incident-meta"><span>🕒 ' + timeStr + '</span>' + (gpsLink ? '<span>📍 ' + gpsLink + '</span>' : '') + '</div>'
           + photoHtml
           + '</div>';
@@ -977,11 +789,6 @@
     };
 
     document.getElementById('detailOverlay').style.display = 'flex';
-  }
-
-  function guessRegionByProvince(th){
-    for (var k in PROVINCE_LOOKUP){ if (PROVINCE_LOOKUP[k].th === th) return PROVINCE_LOOKUP[k].region; }
-    return null;
   }
 
   document.getElementById('detailClose').addEventListener('click', function(){
@@ -1035,7 +842,6 @@
   (async function init(){
     initMapControls();
     await Promise.all([loadIncidents(), loadGeo()]);
-    themeReady = true;
     dataReady = true;
     renderAll();
   })();
