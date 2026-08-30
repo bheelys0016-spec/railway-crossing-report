@@ -1,466 +1,552 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-theme="dark">
 <head>
 <script>
 (function(){
   var ok = false;
   try { ok = sessionStorage.getItem('railway-auth') === '1'; } catch(e){}
-  if (!ok) { window.location.replace('login.html?redirect=railway-crossing-map-stats.html'); }
+  if (!ok) { window.location.replace('login.html?redirect=railway-crossing-stats.html'); }
 })();
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>แผนที่สถิติเหตุอันตรายจุดตัดทางรถไฟ - Cyber Glow Edition</title>
+<title>สถิติเหตุอันตรายจุดตัดทางรถไฟ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg-base: #070913;
-    --bg-gradient: radial-gradient(circle at 50% -20%, #1a1c3a 0%, #070913 70%);
-    --card-bg: rgba(18, 22, 41, 0.75);
-    --card-border: rgba(255, 255, 255, 0.08);
-    --text-main: #F1F5F9;
-    --text-muted: #94A3B8;
-    --accent-glow: #FF2E63;
-    --accent-glow-sub: rgba(255, 46, 99, 0.25);
-    --cyan-glow: #00F2FE;
-    --radius: 24px;
-    --shadow-neon: 0 0 30px rgba(255, 46, 99, 0.15), 0 10px 30px rgba(0, 0, 0, 0.5);
+  :root{
+    /* Light Mode */
+    --steel-900:#F4F6F9;
+    --steel-800:#FFFFFF;
+    --steel-700:#EBF0F5;
+    --steel-600:#D2DCE6;
+    --steel-line:#E2E8F0;
+    --paper:#111827;
+    --paper-dim:#64748B;
+    --amber:#FF2A4B;
+    --amber-dim:#D91438;
+    --red:#FF2A4B;
+    --red-dim:#FFE5E9;
+    --green:#00C853;
+    --green-dim:#E0F8E9;
+    --status-text-pos:#007E33;
+    --deco-stroke:#FF2A4B;
+    --deco-opacity:.18;
+    --radius:10px;
   }
-  
-  html[data-theme="light"] {
-    --bg-base: #F0F4F8;
-    --bg-gradient: radial-gradient(circle at 50% -20%, #E2E8F0 0%, #F0F4F8 70%);
-    --card-bg: rgba(255, 255, 255, 0.85);
-    --card-border: rgba(0, 0, 0, 0.06);
-    --text-main: #0F172A;
-    --text-muted: #64748B;
-    --accent-glow: #E60039;
-    --accent-glow-sub: rgba(230, 0, 57, 0.15);
-    --cyan-glow: #0284C7;
-    --shadow-neon: 0 0 30px rgba(230, 0, 57, 0.1), 0 10px 30px rgba(0, 0, 0, 0.05);
+  html[data-theme="dark"]{
+    /* Dark Mode (Cyber Control Center: ดำสนิท #080B10, การ์ด #121824, ขอบ #253146) */
+    --steel-900:#080B10;
+    --steel-800:#121824;
+    --steel-700:#1A2332;
+    --steel-600:#2A364F;
+    --steel-line:#253146;
+    --paper:#F1F5F9;
+    --paper-dim:#8A99AD;
+    --amber:#FF2A4B;
+    --amber-dim:#CC1A36;
+    --red:#FF2A4B;
+    --red-dim:#3A0A12;
+    --green:#00E676;
+    --green-dim:#043319;
+    --status-text-pos:#69F0AE;
+    --deco-stroke:#FF2A4B;
+    --deco-opacity:.32;
+  }
+  .theme-toggle{
+    position:fixed;top:14px;right:14px;z-index:80;
+    width:42px;height:42px;border-radius:50%;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    color:var(--paper);font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.12);
+  }
+  .lang-toggle{
+    position:fixed;top:14px;right:64px;z-index:80;
+    width:42px;height:42px;border-radius:10px;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    cursor:pointer;padding:0;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.12);
+  }
+  .lang-toggle svg{ width:26px;height:18px;border-radius:3px;display:block; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--steel-900);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 0 64px;position:relative;z-index:1;}
+  header{padding:28px 20px 0;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--red);margin:0 0 6px;
+    font-weight:700;
+  }
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:26px;
+    letter-spacing:.01em;
+    text-transform:uppercase;
+    margin:0 0 4px;
+    color:var(--paper);
+  }
+  .sub{font-size:13px;color:var(--paper-dim);margin:0;}
+
+  .gate-zone{
+    position:relative;
+    height:72px;
+    margin:22px 0 6px;
+    padding:0 20px;
+    display:flex;
+    align-items:center;
+  }
+  .gate-post{
+    position:absolute;left:20px;top:6px;bottom:0;width:8px;
+    background:var(--steel-600);border-radius:3px;
+  }
+  .gate-post.right{left:auto;right:20px;}
+  .gate-arm{
+    position:absolute;left:24px;top:20px;
+    width:calc(100% - 48px);height:22px;
+    border-radius:4px;
+    background:repeating-linear-gradient(135deg,var(--red) 0 18px,#FFFFFF 18px 36px);
+    transform-origin:left center;
+    animation:lower 1.1s cubic-bezier(.34,1.56,.64,1) both;
+    box-shadow:0 3px 12px rgba(255,42,75,.3);
+  }
+  @keyframes lower{
+    0%{transform:rotate(-72deg);}
+    100%{transform:rotate(0deg);}
+  }
+  @media (prefers-reduced-motion:reduce){.gate-arm{animation:none;}}
+
+  main{padding:18px 20px 0;}
+
+  .card{
+    background:var(--steel-800);
+    border:1px solid var(--steel-line);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:14px;
+    box-shadow:0 4px 14px rgba(0,0,0,.08);
+  }
+  .card h2{
+    font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.05em;
+    margin:0 0 12px;color:var(--paper-dim);
   }
 
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
-  body {
-    background: var(--bg-base);
-    background-image: var(--bg-gradient);
-    color: var(--text-main);
-    font-family: 'Outfit', sans-serif;
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+  .stat-card{
+    background:var(--steel-800);border:1px solid var(--steel-line);border-radius:12px;
+    padding:14px 10px;text-align:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.06);
+  }
+  .stat-card .num{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--amber);}
+  .stat-card .lbl{font-size:11px;color:var(--paper-dim);margin-top:3px;}
+
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+  .bar-row .name{width:118px;flex:none;font-size:12.5px;color:var(--paper-dim);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bar-track{flex:1;background:var(--steel-700);border-radius:4px;height:16px;overflow:hidden;}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--amber-dim),var(--amber));border-radius:4px;}
+  .bar-count{width:26px;flex:none;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--paper);}
+
+  .filter-row{display:flex;gap:8px;margin-bottom:12px;}
+  .filter-row input{
+    flex:1;background:var(--steel-700);border:1px solid var(--steel-line);
+    border-radius:var(--radius);color:var(--paper);padding:8px 10px;font-size:13px;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .filter-row button{
+    background:var(--steel-700);border:1px solid var(--steel-line);color:var(--paper-dim);
+    border-radius:var(--radius);padding:8px 12px;font-size:12px;cursor:pointer;
   }
 
-  /* Floating Glowing Controls */
-  .floating-controls {
-    position: fixed; top: 20px; right: 20px; z-index: 80;
-    display: flex; gap: 10px;
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{text-align:left;color:var(--paper-dim);font-weight:500;font-size:11px;
+     text-transform:uppercase;letter-spacing:.04em;padding:6px 6px;border-bottom:1px solid var(--steel-line);}
+  td{padding:8px 6px;border-bottom:1px solid var(--steel-700);vertical-align:top;}
+  .badge{
+    display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    padding:2px 7px;border-radius:20px;background:var(--steel-700);color:var(--amber);
+    border:1px solid var(--amber-dim);white-space:nowrap;
   }
-  .control-btn {
-    width: 48px; height: 48px; border-radius: 16px;
-    background: var(--card-bg); backdrop-filter: blur(12px);
-    border: 1px solid var(--card-border); color: var(--text-main);
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  .empty{color:var(--paper-dim);font-size:13px;text-align:center;padding:22px 10px;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .refresh-link{
+    display:block;width:100%;text-align:center;margin-top:4px;margin-bottom:14px;
+    font-size:12px;color:var(--paper);background:var(--steel-800);
+    border:1px solid var(--steel-line);border-radius:var(--radius);padding:10px;cursor:pointer;
+    font-weight:500;
   }
-  .control-btn:hover {
-    transform: translateY(-3px) scale(1.05);
-    border-color: var(--accent-glow);
-    box-shadow: 0 0 20px var(--accent-glow-sub);
+  .pagination{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    margin-top:14px;flex-wrap:wrap;
   }
-  .control-btn svg { width: 22px; height: 16px; border-radius: 3px; display: block; }
+  .pagination button{
+    min-width:32px;height:32px;padding:0 8px;border-radius:8px;
+    background:var(--steel-700);border:1px solid var(--steel-line);color:var(--paper);
+    font-family:'JetBrains Mono',monospace;font-size:12.5px;cursor:pointer;
+  }
+  .pagination button.active{
+    background:var(--red);border-color:var(--red);color:#fff;font-weight:700;
+  }
+  .pagination button:disabled{
+    opacity:.35;cursor:not-allowed;
+  }
+  .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);
+    box-shadow:0 0 8px var(--red);margin-right:6px;}
 
-  .wrap { max-width: 800px; margin: 0 auto; padding: 32px 16px 100px; }
-  
-  header { padding: 16px 0 28px; text-align: center; }
-  .badge-glow {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 6px 16px; border-radius: 30px;
-    background: var(--accent-glow-sub); border: 1px solid var(--accent-glow);
-    color: var(--accent-glow); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
-    font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
-    box-shadow: 0 0 20px var(--accent-glow-sub); margin-bottom: 14px;
+  /* ----------------- Side Decorations & Animations ----------------- */
+  .rail-deco{
+    position:fixed;
+    top:0; bottom:0;
+    width:260px;
+    pointer-events:none;
+    z-index:0;
+    opacity:var(--deco-opacity);
+    display:none;
   }
-  .pulse-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: var(--accent-glow);
-    box-shadow: 0 0 12px var(--accent-glow); animation: neonPulse 1.5s infinite alternate;
-  }
-  @keyframes neonPulse {
-    0% { transform: scale(0.9); opacity: 0.5; box-shadow: 0 0 5px var(--accent-glow); }
-    100% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 20px var(--accent-glow); }
-  }
+  .rail-deco.left{ left:0; animation: decoFloatLeft 6s ease-in-out infinite; }
+  .rail-deco.right{ right:0; animation: decoFloatRight 7s ease-in-out infinite; }
+  .rail-deco svg{ width:100%; height:100%; }
 
-  h1 {
-    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 32px;
-    letter-spacing: -0.02em; margin: 0 0 8px;
-    background: linear-gradient(135deg, var(--text-main) 30%, var(--accent-glow) 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  @keyframes decoFloatLeft {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(0.4deg); }
   }
-  .sub { font-size: 14.5px; color: var(--text-muted); margin: 0 auto; max-width: 550px; line-height: 1.6; }
-
-  /* Glass Cards */
-  .card {
-    background: var(--card-bg); backdrop-filter: blur(16px);
-    border: 1px solid var(--card-border); border-radius: var(--radius);
-    padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-neon);
-    transition: transform 0.3s ease, border-color 0.3s ease;
-  }
-  .card:hover { border-color: rgba(255, 46, 99, 0.3); }
-  
-  .card h2 {
-    font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 16px;
-    color: var(--text-muted); display: flex; align-items: center; gap: 8px;
+  @keyframes decoFloatRight {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(10px) rotate(-0.5deg); }
   }
 
-  /* Futuristic Tabs */
-  .range-tabs { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-  .range-tab {
-    flex: 1; min-width: 75px; text-align: center; font-family: 'Outfit', sans-serif;
-    font-size: 13.5px; font-weight: 600; padding: 12px 10px; border-radius: 14px;
-    border: 1px solid var(--card-border); background: rgba(255,255,255,0.02);
-    color: var(--text-muted); cursor: pointer; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  @media (min-width:1180px){
+    .rail-deco{ display:block; }
   }
-  .range-tab:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
-  .range-tab.active {
-    background: var(--accent-glow); border-color: var(--accent-glow); color: #FFFFFF;
-    box-shadow: 0 0 25px var(--accent-glow-sub); transform: translateY(-2px);
-  }
-  .range-label { font-size: 12.5px; color: var(--text-muted); text-align: center; margin-bottom: 16px; font-family: 'JetBrains Mono', monospace; }
 
-  .region-select {
-    width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border);
-    color: var(--text-main); border-radius: 14px; padding: 14px 16px; font-size: 14px;
-    font-family: 'Outfit', sans-serif; outline: none; cursor: pointer; transition: all 0.3s;
+  /* ----------------- Floating Particles (ละอองฟุ้งๆ ลอย) ----------------- */
+  .particles-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
   }
-  .region-select:focus { border-color: var(--accent-glow); box-shadow: 0 0 15px var(--accent-glow-sub); }
+  .particle {
+    position: absolute;
+    background: var(--red);
+    border-radius: 50%;
+    opacity: 0;
+    box-shadow: 0 0 8px var(--red);
+    animation: floatUp linear infinite;
+  }
+  @keyframes floatUp {
+    0% {
+      transform: translateY(100vh) scale(0.6);
+      opacity: 0;
+    }
+    20% {
+      opacity: 0.6;
+    }
+    80% {
+      opacity: 0.6;
+    }
+    100% {
+      transform: translateY(-20vh) scale(1.2);
+      opacity: 0;
+    }
+  }
 
-  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-muted); margin-top: 16px; }
-  .legend span { display: inline-flex; align-items: center; gap: 6px; }
-  .legend i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; box-shadow: 0 0 8px rgba(0,0,0,0.3); }
-
-  /* Stat Grid */
-  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
-  .stat-card {
-    background: var(--card-bg); backdrop-filter: blur(16px);
-    border: 1px solid var(--card-border); border-radius: var(--radius);
-    padding: 20px 12px; text-align: center; box-shadow: var(--shadow-neon);
-    position: relative; overflow: hidden;
+  .train-nav{ position:fixed; left:16px; bottom:16px; z-index:90; }
+  .train-nav-btn{
+    width:56px;height:56px;border-radius:50%;
+    background:var(--steel-800);border:2px solid var(--red);
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;cursor:pointer;box-shadow:0 3px 12px rgba(255,42,75,.3);
+    animation:trainBob 2.6s ease-in-out infinite;
   }
-  .stat-card::before {
-    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
-    background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
-    opacity: 0.6;
+  @keyframes trainBob{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    50%{ transform:translateY(-4px) rotate(-4deg); }
   }
-  .stat-card .num { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; color: var(--accent-glow); text-shadow: 0 0 20px var(--accent-glow-sub); }
-  .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
-
-  /* Map Box */
-  .search-row { display: flex; gap: 10px; margin-bottom: 14px; }
-  .search-row input {
-    flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); color: var(--text-main);
-    border-radius: 14px; padding: 12px 16px; font-size: 14px; font-family: 'Outfit', sans-serif; outline: none;
-    transition: all 0.3s;
+  .train-menu{
+    display:none;position:absolute;bottom:66px;left:0;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    border-radius:12px;padding:8px;min-width:190px;
+    box-shadow:0 6px 18px rgba(0,0,0,.3);
   }
-  .search-row input:focus { border-color: var(--cyan-glow); box-shadow: 0 0 15px rgba(0, 242, 254, 0.2); }
-  .search-row button {
-    background: linear-gradient(135deg, var(--accent-glow), #ff527b); border: none; color: #fff;
-    border-radius: 14px; padding: 12px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
-    box-shadow: 0 0 20px var(--accent-glow-sub); transition: transform 0.2s, opacity 0.2s;
+  .train-menu.open{ display:block; }
+  .train-menu a{
+    display:flex;align-items:center;gap:9px;
+    padding:9px 10px;border-radius:8px;text-decoration:none;
+    color:var(--paper);font-size:13px;font-family:'Inter',sans-serif;
   }
-  .search-row button:hover { opacity: 0.9; transform: scale(1.03); }
-  .search-msg { font-size: 12.5px; color: var(--accent-glow); margin: -6px 0 10px; min-height: 18px; font-family: 'JetBrains Mono', monospace; }
-
-  .map-wrap { width: 100%; background: rgba(0,0,0,0.3); border-radius: 18px; overflow: hidden; position: relative; border: 1px solid var(--card-border); }
-  .map-wrap svg { width: 100%; height: auto; display: block; }
-  .map-outer { position: relative; }
-  .map-controls {
-    position: absolute; top: 16px; right: 16px; z-index: 6;
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  .map-controls button {
-    width: 40px; height: 40px; border-radius: 12px;
-    background: var(--card-bg); backdrop-filter: blur(10px);
-    border: 1px solid var(--card-border); color: var(--text-main); font-size: 18px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: all 0.2s;
-  }
-  .map-controls button:hover { transform: scale(1.1); border-color: var(--accent-glow); box-shadow: 0 0 15px var(--accent-glow-sub); }
-  
-  .province-path { stroke: var(--bg-base); stroke-width: 1; cursor: pointer; transition: opacity .2s, filter .2s; }
-  .province-path:hover { filter: drop-shadow(0 0 8px var(--accent-glow)); opacity: 0.9; }
-  .province-path.dimmed { opacity: 0.1; pointer-events: none; }
-
-  .map-msg { padding: 60px 20px; text-align: center; color: var(--text-muted); font-size: 14px; }
-  .skeleton-loader { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
-  .skeleton-spinner {
-    width: 44px; height: 44px; border: 3px solid var(--card-border); border-top-color: var(--accent-glow);
-    border-radius: 50%; animation: spin 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-    box-shadow: 0 0 15px var(--accent-glow-sub);
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .toplist { margin-top: 6px; max-height: 380px; overflow-y: auto; padding-right: 4px; }
-  .top-row {
-    display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--card-border);
-    cursor: pointer; border-radius: 14px; transition: all 0.2s;
-  }
-  .top-row:hover { background: rgba(255,255,255,0.04); transform: translateX(6px); border-color: var(--accent-glow-sub); }
-  .top-row .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 10px currentColor; }
-  .top-row .pname { flex: 1; font-size: 14px; font-weight: 600; }
-  .top-row .pcount { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--text-muted); font-weight: 700; }
-
-  .btn-action {
-    width: 100%; background: linear-gradient(135deg, var(--accent-glow), #ff527b); border: none; color: #fff;
-    border-radius: 16px; padding: 16px; font-size: 15px; font-weight: 700; cursor: pointer; text-align: center;
-    font-family: 'Outfit', sans-serif; box-shadow: 0 0 25px var(--accent-glow-sub); transition: all 0.3s;
-  }
-  .btn-action:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 0 35px var(--accent-glow); }
-
-  .empty { color: var(--text-muted); font-size: 14px; text-align: center; padding: 30px 10px; }
-  .mono { font-family: 'JetBrains Mono', monospace; }
-
-  /* Cyberpunk Modal Overlay */
-  #detailOverlay {
-    display: none; position: fixed; inset: 0; background: rgba(5, 7, 15, 0.8); backdrop-filter: blur(10px); z-index: 90;
-    align-items: flex-end; justify-content: center; animation: fadeIn 0.3s ease;
-  }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @media (min-width: 600px) { #detailOverlay { align-items: center; } }
-  
-  #detailPanel {
-    background: var(--card-bg); backdrop-filter: blur(25px);
-    border: 1px solid rgba(255, 46, 99, 0.2);
-    border-radius: 28px 28px 0 0; padding: 28px; width: 100%; max-width: 640px;
-    max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 30px var(--accent-glow-sub);
-    animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  @media (min-width: 600px) { #detailPanel { border-radius: 28px; } }
-
-  .detail-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-  .detail-head h3 { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; text-transform: uppercase; margin: 0; color: var(--text-main); }
-  .detail-close {
-    background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); color: var(--text-muted);
-    width: 38px; height: 38px; border-radius: 50%; font-size: 16px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-  }
-  .detail-close:hover { background: var(--accent-glow); color: #fff; border-color: var(--accent-glow); box-shadow: 0 0 15px var(--accent-glow-sub); }
-  
-  .detail-region { font-size: 13.5px; color: var(--text-muted); margin-bottom: 20px; font-family: 'JetBrains Mono', monospace; }
-  .detail-stat-row { display: flex; gap: 12px; margin-bottom: 20px; }
-  .detail-stat { flex: 1; background: rgba(0,0,0,0.2); border-radius: 16px; padding: 14px; text-align: center; border: 1px solid var(--card-border); }
-  .detail-stat .n { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: var(--accent-glow); text-shadow: 0 0 15px var(--accent-glow-sub); }
-  .detail-stat .l { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-
-  .incident-card {
-    background: rgba(0,0,0,0.25); border: 1px solid var(--card-border); border-radius: 18px;
-    padding: 18px; margin-bottom: 14px; transition: border-color 0.2s;
-  }
-  .incident-card:hover { border-color: rgba(255,46,99,0.3); }
-  .badge {
-    display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
-    padding: 5px 12px; border-radius: 20px; background: var(--accent-glow-sub); color: var(--accent-glow);
-    border: 1px solid var(--accent-glow); white-space: nowrap; font-weight: 700;
-  }
-  .incident-note { font-size: 14px; line-height: 1.6; color: var(--text-main); margin: 12px 0; white-space: pre-wrap; }
-  .incident-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--text-muted); }
-  .incident-meta a { color: var(--cyan-glow); text-decoration: none; font-weight: 600; text-shadow: 0 0 10px rgba(0,242,254,0.3); }
-  .incident-meta a:hover { text-decoration: underline; }
-  .incident-photo { width: 100%; max-height: 240px; object-fit: cover; border-radius: 12px; margin-top: 14px; display: block; border: 1px solid var(--card-border); }
-
-  /* Cyber Neon Toast */
-  #toast {
-    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
-    background: var(--card-bg); backdrop-filter: blur(15px); border: 1px solid var(--accent-glow); color: var(--text-main);
-    padding: 14px 28px; border-radius: 30px; font-size: 14px; font-weight: 600; z-index: 100;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px var(--accent-glow-sub); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  #toast.show { transform: translateX(-50%) translateY(0); }
+  .train-menu a:hover{ background:var(--steel-700); }
+  .train-menu a.current{ color:var(--red);font-weight:600; }
+  .train-menu .emoji{ font-size:16px; }
 </style>
 </head>
 <body>
 
-<div class="floating-controls">
-  <button class="control-btn" id="langToggle" type="button" aria-label="Switch Language">🇹🇭</button>
-  <button class="control-btn" id="themeToggle" type="button" aria-label="Toggle Theme">🌙</button>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="สลับโหมดกลางวัน/กลางคืน">🌙</button>
+<button class="lang-toggle" id="langToggle" type="button" aria-label="Switch language / เปลี่ยนภาษา">🇹🇭</button>
+
+<!-- ละอองฟุ้งๆ ลอย (Floating Particles) -->
+<div class="particles-container" aria-hidden="true">
+  <div class="particle" style="left: 8%; width: 5px; height: 5px; animation-duration: 9s; animation-delay: 0s;"></div>
+  <div class="particle" style="left: 18%; width: 3px; height: 3px; animation-duration: 12s; animation-delay: 2s;"></div>
+  <div class="particle" style="left: 85%; width: 4px; height: 4px; animation-duration: 10s; animation-delay: 1s;"></div>
+  <div class="particle" style="left: 92%; width: 6px; height: 6px; animation-duration: 14s; animation-delay: 3s;"></div>
+  <div class="particle" style="left: 4%; width: 3px; height: 3px; animation-duration: 8s; animation-delay: 4s;"></div>
+  <div class="particle" style="left: 95%; width: 4px; height: 4px; animation-duration: 11s; animation-delay: 2.5s;"></div>
+</div>
+
+<div class="train-nav">
+  <div class="train-menu" id="trainMenu">
+    <a href="index.html" data-page="index"><span class="emoji">📝</span> แจ้งเหตุ</a>
+    <a href="railway-crossing-stats.html" data-page="stats"><span class="emoji">📊</span> สถิติ</a>
+    <a href="railway-crossing-map-stats.html" data-page="map"><span class="emoji">🗺️</span> แผนที่สถิติ</a>
+    <a href="stats-assistant.html" data-page="assistant"><span class="emoji">🤖</span> ถาม-ตอบสถิติ</a>
+    <a href="login-logs.html" data-page="logs"><span class="emoji">🔐</span> ประวัติการเข้าสู่ระบบ</a>
+  </div>
+  <button class="train-nav-btn" id="trainNavBtn" type="button" aria-label="เมนู">🚂</button>
+</div>
+
+<div class="rail-deco left" aria-hidden="true">
+  <svg viewBox="0 0 260 900" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="var(--deco-stroke)" stroke-width="2">
+    <path d="M150 90 C 140 70, 118 65, 108 78 C 96 92, 100 112, 92 126 C 80 146, 60 150, 58 172 C 56 196, 76 206, 80 228 C 84 252, 66 264, 70 290 C 74 316, 100 322, 104 348 C 108 374, 90 388, 96 414 C 100 432, 118 438, 122 458 C 126 480, 110 492, 116 516 C 121 538, 140 540, 143 562 C 146 584, 132 596, 138 618 C 143 636, 160 640, 162 660 C 164 682, 150 692, 154 712 C 157 728, 172 732, 172 748 C 172 762, 160 768, 160 780" stroke-opacity=".55" stroke-width="2.4"/>
+    <line x1="40" y1="820" x2="40" y2="900" stroke="var(--paper-dim)" stroke-width="2"/>
+    <line x1="56" y1="820" x2="56" y2="900" stroke="var(--paper-dim)" stroke-width="2"/>
+    <g stroke="var(--paper-dim)" stroke-width="2">
+      <line x1="30" y1="828" x2="66" y2="828"/><line x1="30" y1="844" x2="66" y2="844"/><line x1="30" y1="860" x2="66" y2="860"/><line x1="30" y1="876" x2="66" y2="876"/><line x1="30" y1="892" x2="66" y2="892"/>
+    </g>
+  </svg>
+</div>
+
+<div class="rail-deco right" aria-hidden="true">
+  <svg viewBox="0 0 260 340" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="var(--deco-stroke)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(10,140)">
+      <path d="M40 -6 C 34 -16, 44 -22, 38 -32 C 32 -42, 44 -46, 40 -56" stroke-opacity=".6"/>
+      <path d="M54 -2 C 50 -12, 58 -16, 54 -26" stroke-opacity=".4"/>
+      <rect x="32" y="-2" width="16" height="26" rx="3"/>
+      <rect x="18" y="24" width="150" height="46" rx="20"/>
+      <path d="M70 24 q10 -16 24 0"/>
+      <path d="M168 24 h34 v46 h-56 v-24 q0 -22 22 -22 z"/>
+      <rect x="182" y="34" width="16" height="14" rx="2"/>
+      <path d="M18 70 l-16 26 h34 l6 -26 z"/>
+      <line x1="8" y1="96" x2="210" y2="96"/>
+      <circle cx="46" cy="96" r="22"/><circle cx="46" cy="96" r="5"/>
+      <circle cx="104" cy="104" r="30"/><circle cx="104" cy="104" r="6"/>
+      <circle cx="168" cy="96" r="22"/><circle cx="168" cy="96" r="5"/>
+      <line x1="46" y1="96" x2="168" y2="96" stroke-opacity=".7"/>
+      <line x1="-10" y1="134" x2="230" y2="134" stroke="var(--paper-dim)" stroke-width="2"/>
+      <g stroke="var(--paper-dim)" stroke-width="2">
+        <line x1="0" y1="134" x2="0" y2="146"/><line x1="30" y1="134" x2="30" y2="146"/><line x1="60" y1="134" x2="60" y2="146"/><line x1="90" y1="134" x2="90" y2="146"/><line x1="120" y1="134" x2="120" y2="146"/><line x1="150" y1="134" x2="150" y2="146"/><line x1="180" y1="134" x2="180" y2="146"/><line x1="210" y1="134" x2="210" y2="146"/>
+      </g>
+    </g>
+  </svg>
 </div>
 
 <div class="wrap">
   <header>
-    <div class="badge-glow"><span class="pulse-dot"></span>Cyber Glow Security Grid</div>
-    <h1 data-i18n="title">แผนที่สถิติเหตุอันตรายทั่วประเทศ</h1>
-    <p class="sub" data-i18n="subtitle">ระบบวิเคราะห์และแสดงผลสถิติอุบัติเหตุจุดตัดทางรถไฟแบบเรียลไทม์ ดีไซน์ล้ำอนาคต</p>
+    <p class="eyebrow"><span class="live-dot"></span>Level crossing safety network</p>
+    <h1 data-i18n="title">สถิติเหตุอันตรายจุดตัดทางรถไฟ</h1>
+    <p class="sub" data-i18n="subtitle">ข้อมูลเชื่อมต่อสดจากแบบฟอร์มแจ้งเหตุที่ประชาชนสแกน QR ส่งเข้ามา</p>
   </header>
 
+  <div class="gate-zone">
+    <div class="gate-post"></div>
+    <div class="gate-post right"></div>
+    <div class="gate-arm"></div>
+  </div>
+
   <main>
-    <div class="card">
-      <h2 data-i18n="rangeHeader">⚡ ช่วงเวลาวิเคราะห์</h2>
-      <div class="range-tabs" id="rangeTabs">
-        <button class="range-tab" data-range="today" data-i18n="rangeToday">วันนี้</button>
-        <button class="range-tab active" data-range="7d" data-i18n="range7d">7 วัน</button>
-        <button class="range-tab" data-range="30d" data-i18n="range30d">30 วัน</button>
-        <button class="range-tab" data-range="all" data-i18n="rangeAll">ทั้งหมด</button>
-      </div>
-      <div class="range-label" id="rangeLabel"></div>
-
-      <h2 style="margin-top:12px;" data-i18n="regionHeader">🌐 กรองตามภูมิภาค</h2>
-      <select class="region-select" id="regionSelect">
-        <option value="all" data-i18n="regionAll">ทั้งประเทศ (Whole Country)</option>
-        <option value="north" data-i18n="regionNorth">ภาคเหนือ</option>
-        <option value="northeast" data-i18n="regionNortheast">ภาคตะวันออกเฉียงเหนือ</option>
-        <option value="central" data-i18n="regionCentral">ภาคกลาง</option>
-        <option value="east" data-i18n="regionEast">ภาคตะวันออก</option>
-        <option value="west" data-i18n="regionWest">ภาคตะวันตก</option>
-        <option value="south" data-i18n="regionSouth">ภาคใต้</option>
-      </select>
-
-      <div class="legend">
-        <span><i style="background:var(--card-border);"></i><span data-i18n="legendNone">ไม่มีข้อมูล</span></span>
-        <span><i style="background:#10B981; box-shadow:0 0 10px #10B981;"></i><span data-i18n="legendLow">น้อย (1–2)</span></span>
-        <span><i style="background:#F59E0B; box-shadow:0 0 10px #F59E0B;"></i><span data-i18n="legendMid">ปานกลาง (3–5)</span></span>
-        <span><i style="background:#FF2E63; box-shadow:0 0 10px #FF2E63;"></i><span data-i18n="legendHigh">สูงมาก (6+)</span></span>
-      </div>
-    </div>
-
     <div class="stat-grid">
-      <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl" data-i18n="statTotalLabel">เหตุทั้งหมดในช่วงนี้</div></div>
-      <div class="stat-card"><div class="num" id="statProvinces">0</div><div class="lbl" data-i18n="statProvincesLabel">จังหวัดที่พบเหตุ</div></div>
-      <div class="stat-card"><div class="num" id="statUnmapped">0</div><div class="lbl" data-i18n="statUnmappedLabel">ไม่ระบุพิกัด</div></div>
+      <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl" data-i18n="statTotalLabel">ทั้งหมด</div></div>
+      <div class="stat-card"><div class="num" id="statMonth">0</div><div class="lbl" data-i18n="statMonthLabel">เดือนนี้</div></div>
+      <div class="stat-card"><div class="num" id="statCrossings">0</div><div class="lbl" data-i18n="statCrossingsLabel">จุดที่แจ้งเหตุ</div></div>
+    </div>
+
+    <div class="btn-row" style="display:flex;gap:8px;margin-bottom:14px;">
+      <a href="railway-crossing-map-stats.html" data-i18n="mapLink" style="flex:1;display:block;text-align:center;background:var(--steel-800);border:1px solid var(--red);color:var(--red);border-radius:var(--radius);padding:11px;font-size:13px;text-decoration:none;font-weight:600;box-shadow: 0 2px 8px rgba(255,42,75,.15);">
+        ดูแผนที่สถิติแยกตามจังหวัด →
+      </a>
+    </div>
+
+    <button class="refresh-link" id="refreshBtn" data-i18n="refreshBtn">รีเฟรชข้อมูลล่าสุด</button>
+
+    <div class="card">
+      <h2 data-i18n="byTypeHeader">แยกตามประเภทเหตุ</h2>
+      <div id="typeBars"><div class="empty" data-i18n="noData">ยังไม่มีข้อมูล</div></div>
     </div>
 
     <div class="card">
-      <h2 data-i18n="mapHeader">🗺️ แผนที่พิกัดความถี่รายจังหวัด</h2>
-      <div class="search-row">
-        <input type="text" id="provinceSearch" data-i18n-placeholder="searchPlaceholder" placeholder="ค้นหาจังหวัด เช่น กรุงเทพมหานคร">
-        <button id="searchBtn" type="button" data-i18n="searchBtn">ค้นหา</button>
-      </div>
-      <div class="search-msg" id="searchMsg"></div>
-      <div class="map-outer" id="mapOuter">
-        <div class="map-wrap" id="mapWrap">
-          <div class="map-msg" id="mapMsg">
-            <div class="skeleton-loader">
-              <div class="skeleton-spinner"></div>
-              <span data-i18n="mapLoading">กำลังซิงค์ข้อมูลและเรนเดอร์แผนที่ Cyber...</span>
-            </div>
-          </div>
-        </div>
-        <div class="map-controls">
-          <button id="zoomInBtn" type="button" aria-label="Zoom in">+</button>
-          <button id="zoomOutBtn" type="button" aria-label="Zoom out">−</button>
-          <button id="zoomResetBtn" type="button" aria-label="Reset view">⟳</button>
-        </div>
-      </div>
+      <h2 data-i18n="byCrossingHeader">จุดตัดที่มีการแจ้งเหตุมากที่สุด</h2>
+      <div id="crossingBars"><div class="empty" data-i18n="noData">ยังไม่มีข้อมูล</div></div>
     </div>
 
     <div class="card">
-      <h2 data-i18n="topListHeader">🏆 อันดับจังหวัดที่มีเหตุสูงสุด</h2>
-      <div class="toplist" id="topList"><div class="empty" data-i18n="noData">ยังไม่มีข้อมูลในระบบ</div></div>
+      <h2 data-i18n="recentHeader">รายการแจ้งเหตุล่าสุด</h2>
+      <div class="filter-row">
+        <input id="filterInput" data-i18n-placeholder="filterPlaceholder" placeholder="กรองตามรหัสจุดตัด เช่น CR-001">
+        <button id="filterClear" data-i18n="clearBtn">ล้าง</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th data-i18n="thTime">เวลา</th><th data-i18n="thCrossing">จุด</th><th data-i18n="thType">ประเภท</th><th data-i18n="thTrust" style="text-align:center;">น่าเชื่อถือ</th></tr></thead>
+          <tbody id="incidentTable"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="tableEmpty" data-i18n="noMatch" style="display:none;">ไม่พบรายการที่ตรงกับการค้นหา</div>
+      <div class="pagination" id="pagination" style="display:none;"></div>
     </div>
-
-    <button class="btn-action" id="downloadAllBtn" data-i18n="downloadAllBtn">📥 ดาวน์โหลดรายงานช่วงเวลานี้ (CSV)</button>
   </main>
 </div>
 
-<div id="detailOverlay">
-  <div id="detailPanel">
-    <div class="detail-head">
-      <h3 id="detailTitle">-</h3>
-      <button class="detail-close" id="detailClose">✕</button>
+<div id="lightbox" style="display:none;position:fixed;inset:0;background:rgba(8,11,16,.92);z-index:50;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:var(--steel-800);border:1px solid var(--steel-line);border-radius:12px;padding:18px;max-width:440px;width:100%;max-height:85vh;overflow-y:auto;" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+      <span class="badge" id="detailType" style="font-size:12px;padding:4px 10px;"></span>
+      <button id="detailClose" style="background:none;border:none;color:var(--paper-dim);font-size:18px;cursor:pointer;line-height:1;">✕</button>
     </div>
-    <div class="detail-region" id="detailRegionText"></div>
-    <div class="detail-stat-row">
-      <div class="detail-stat"><div class="n" id="detailCount">0</div><div class="l" data-i18n="detailCountLabel">เหตุในช่วงนี้</div></div>
-      <div class="detail-stat"><div class="n" id="detailTypesCount">0</div><div class="l" data-i18n="detailTypesLabel">ประเภทความเสี่ยง</div></div>
+    <div style="font-size:12px;color:var(--paper-dim);margin-bottom:2px;" data-i18n="detailCrossingLabel">รหัสจุดตัด</div>
+    <div class="mono" id="detailCrossing" style="font-size:15px;margin-bottom:12px;color:var(--amber);"></div>
+    <div style="font-size:12px;color:var(--paper-dim);margin-bottom:2px;" data-i18n="detailTimeLabel">เวลาแจ้ง</div>
+    <div class="mono" id="detailTime" style="font-size:13px;margin-bottom:12px;"></div>
+    <div style="font-size:12px;color:var(--paper-dim);margin-bottom:2px;" data-i18n="detailNoteLabel">รายละเอียดที่แจ้ง</div>
+    <div id="detailNote" style="font-size:13.5px;line-height:1.6;margin-bottom:12px;white-space:pre-wrap;"></div>
+    <div id="detailGpsWrap" style="margin-bottom:12px;">
+      <div style="font-size:12px;color:var(--paper-dim);margin-bottom:2px;" data-i18n="detailGpsLabel">ตำแหน่ง GPS</div>
+      <div class="mono" id="detailGps" style="font-size:13px;"></div>
     </div>
-    <button class="btn-action" id="detailDownloadBtn" style="margin-bottom:16px;" data-i18n="detailDownloadBtn">📥 ดาวน์โหลดข้อมูลเฉพาะจังหวัดนี้ (CSV)</button>
-    <div id="detailIncidents"></div>
+    <div id="detailPhotoWrap" style="display:none;">
+      <div style="font-size:12px;color:var(--paper-dim);margin-bottom:6px;" data-i18n="detailPhotoLabel">ภาพที่แนบ</div>
+      <img id="detailPhoto" style="width:100%;border-radius:var(--radius);border:1px solid var(--steel-line);display:block;">
+    </div>
+    <div id="detailTrustWrap" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--steel-line);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span id="detailTrustBadge" style="font-size:18px;"></span>
+        <span id="detailTrustLabel" style="font-size:13px;font-weight:600;"></span>
+      </div>
+      <ul id="detailTrustReasons" style="margin:0;padding-left:18px;font-size:12.5px;color:var(--paper-dim);line-height:1.7;"></ul>
+      <div style="font-size:11px;color:var(--paper-dim);margin-top:8px;font-style:italic;" data-i18n="trustDisclaimer">คะแนนนี้เป็นเพียงสัญญาณช่วยกรองเบื้องต้น ไม่ใช่การตัดสินขาดว่าจริงหรือปลอม โปรดใช้วิจารณญาณของเจ้าหน้าที่ประกอบด้วยเสมอ</div>
+    </div>
   </div>
 </div>
 
-<div id="toast"></div>
-
 <script>
 (function(){
-  function showToast(msg){
-    var tEl = document.getElementById('toast');
-    tEl.textContent = msg;
-    tEl.classList.add('show');
-    setTimeout(function(){ tEl.classList.remove('show'); }, 3000);
-  }
-
-  var THEME_KEY = 'railway-theme-cyber';
+  /* ---------- day/night theme toggle ---------- */
+  var THEME_KEY = 'railway-theme';
   var toggleBtn = document.getElementById('themeToggle');
   function applyTheme(mode){
-    if (mode === 'light'){
-      document.documentElement.setAttribute('data-theme', 'light');
-      toggleBtn.textContent = '☀️';
+    if (mode === 'dark'){
+      document.documentElement.setAttribute('data-theme', 'dark');
+      toggleBtn.textContent = '🌙';
     } else {
       document.documentElement.removeAttribute('data-theme');
-      toggleBtn.textContent = '🌙';
+      toggleBtn.textContent = '☀️';
     }
   }
   var saved = null;
   try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
-  applyTheme(saved === 'light' ? 'light' : 'dark');
+  applyTheme(saved ? saved : 'dark');
   toggleBtn.addEventListener('click', function(){
-    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    var next = isLight ? 'dark' : 'light';
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var next = isDark ? 'light' : 'dark';
     applyTheme(next);
     try { localStorage.setItem(THEME_KEY, next); } catch(e){}
-    renderAll();
   });
 
-  var LANG_KEY = 'railway-lang-cyber';
+  /* ---------- language toggle (TH / EN) ---------- */
+  var LANG_KEY = 'railway-lang';
   var FLAG_TH = '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#A51931"/><rect y="3.33" width="30" height="13.34" fill="#F4F5F8"/><rect y="6.67" width="30" height="6.66" fill="#2D2A4A"/></svg>';
   var FLAG_GB = '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#00247D"/><g stroke="#FFFFFF" stroke-width="4"><line x1="0" y1="0" x2="30" y2="20"/><line x1="30" y1="0" x2="0" y2="20"/></g><g stroke="#CF142B" stroke-width="1.6"><line x1="0" y1="0" x2="30" y2="20"/><line x1="30" y1="0" x2="0" y2="20"/></g><g stroke="#FFFFFF" stroke-width="6"><line x1="15" y1="0" x2="15" y2="20"/><line x1="0" y1="10" x2="30" y2="10"/></g><g stroke="#CF142B" stroke-width="3"><line x1="15" y1="0" x2="15" y2="20"/><line x1="0" y1="10" x2="30" y2="10"/></g></svg>';
   var langToggle = document.getElementById('langToggle');
   var currentLang = 'th';
-  var dataReady = false;
   var I18N = {
     th: {
-      title: 'แผนที่สถิติเหตุอันตรายทั่วประเทศ',
-      subtitle: 'ระบบวิเคราะห์และแสดงผลสถิติอุบัติเหตุจุดตัดทางรถไฟแบบเรียลไทม์ ดีไซน์ล้ำอนาคต',
-      rangeHeader: '⚡ ช่วงเวลาวิเคราะห์',
-      rangeToday: 'วันนี้', range7d: '7 วัน', range30d: '30 วัน', rangeAll: 'ทั้งหมด',
-      regionHeader: '🌐 กรองตามภูมิภาค',
-      regionAll: 'ทั้งประเทศ (Whole Country)', regionNorth: 'ภาคเหนือ', regionNortheast: 'ภาคตะวันออกเฉียงเหนือ',
-      regionCentral: 'ภาคกลาง', regionEast: 'ภาคตะวันออก', regionWest: 'ภาคตะวันตก', regionSouth: 'ภาคใต้',
-      legendNone: 'ไม่มีข้อมูล', legendLow: 'น้อย (1–2)', legendMid: 'ปานกลาง (3–5)', legendHigh: 'สูงมาก (6+)',
-      statTotalLabel: 'เหตุทั้งหมดในช่วงนี้', statProvincesLabel: 'จังหวัดที่พบเหตุ', statUnmappedLabel: 'ไม่ระบุพิกัด',
-      mapHeader: '🗺️ แผนที่พิกัดความถี่รายจังหวัด',
-      searchPlaceholder: 'ค้นหาจังหวัด เช่น กรุงเทพมหานคร', searchBtn: 'ค้นหา', mapLoading: 'กำลังซิงค์ข้อมูลและเรนเดอร์แผนที่ Cyber...',
-      topListHeader: '🏆 อันดับจังหวัดที่มีเหตุสูงสุด', noData: 'ยังไม่มีข้อมูลในระบบ',
-      downloadAllBtn: '📥 ดาวน์โหลดรายงานช่วงเวลานี้ (CSV)', detailCountLabel: 'เหตุในช่วงนี้', detailTypesLabel: 'ประเภทความเสี่ยง',
-      detailDownloadBtn: '📥 ดาวน์โหลดข้อมูลเฉพาะจังหวัดนี้ (CSV)', noGpsData: 'ไม่พบเหตุที่มีพิกัดในเงื่อนไขเวลา/ภูมิภาคนี้',
-      mapLoadFailed: 'โหลดแผนที่ไม่สำเร็จ — สามารถดูข้อมูลจากอันดับด้านล่างแทนได้', openInMaps: 'เปิดใน Google Maps',
-      noDetailText: 'ไม่มีรายละเอียดเพิ่มเติม', provincePrefix: 'จังหวัด_', searchNotFound: 'ไม่พบจังหวัด "',
-      csvDownloaded: 'ดาวน์โหลดไฟล์รายงาน CSV เรียบร้อยแล้ว', locale: 'th-TH',
-      regionMap: {all:'ทั้งประเทศ', north:'ภาคเหนือ', northeast:'ภาคตะวันออกเฉียงเหนือ', central:'ภาคกลาง', east:'ภาคตะวันออก', west:'ภาคตะวันตก', south:'ภาคใต้'}
+      title: 'สถิติเหตุอันตรายจุดตัดทางรถไฟ',
+      subtitle: 'ข้อมูลเชื่อมต่อสดจากแบบฟอร์มแจ้งเหตุที่ประชาชนสแกน QR ส่งเข้ามา',
+      statTotalLabel: 'ทั้งหมด', statMonthLabel: 'เดือนนี้', statCrossingsLabel: 'จุดที่แจ้งเหตุ',
+      mapLink: 'ดูแผนที่สถิติแยกตามจังหวัด →',
+      refreshBtn: 'รีเฟรชข้อมูลล่าสุด',
+      byTypeHeader: 'แยกตามประเภทเหตุ',
+      byCrossingHeader: 'จุดตัดที่มีการแจ้งเหตุมากที่สุด',
+      recentHeader: 'รายการแจ้งเหตุล่าสุด',
+      filterPlaceholder: 'กรองตามรหัสจุดตัด เช่น CR-001',
+      clearBtn: 'ล้าง',
+      thTime: 'เวลา', thCrossing: 'จุด', thType: 'ประเภท',
+      noMatch: 'ไม่พบรายการที่ตรงกับการค้นหา',
+      noData: 'ยังไม่มีข้อมูล',
+      viewLink: 'ดู ›',
+      detailCrossingLabel: 'รหัสจุดตัด',
+      detailTimeLabel: 'เวลาแจ้ง',
+      detailNoteLabel: 'รายละเอียดที่แจ้ง',
+      detailGpsLabel: 'ตำแหน่ง GPS',
+      detailPhotoLabel: 'ภาพที่แนบ',
+      noDetailText: 'ไม่มีรายละเอียดเพิ่มเติม',
+      openInMaps: 'เปิดใน Google Maps',
+      thTrust: 'น่าเชื่อถือ',
+      trustTitle: 'คะแนนความน่าเชื่อถือ (ใช้ประกอบการตรวจสอบ ไม่ใช่การตัดสินขาด)',
+      trustHigh: 'น่าเชื่อถือสูง',
+      trustMedium: 'ควรตรวจสอบเพิ่มเติม',
+      trustLow: 'ความน่าเชื่อถือต่ำ ควรตรวจสอบก่อนดำเนินการ',
+      trustDisclaimer: 'คะแนนนี้เป็นเพียงสัญญาณช่วยกรองเบื้องต้น ไม่ใช่การตัดสินขาดว่าจริงหรือปลอม โปรดใช้วิจารณญาณของเจ้าหน้าที่ประกอบด้วยเสมอ',
+      reasonGps: 'มีตำแหน่ง GPS แนบมา',
+      reasonNoGps: 'ไม่มีตำแหน่ง GPS แนบมา',
+      reasonPhoto: 'มีรูปถ่ายแนบมา',
+      reasonNoPhoto: 'ไม่มีรูปถ่ายแนบมา',
+      reasonDetails: 'มีรายละเอียดเพิ่มเติมที่ชัดเจน',
+      reasonSuspicious: 'พบคำที่บ่งชี้ว่าอาจเป็นข้อมูลทดสอบ/สแปม',
+      reasonGpsDrift: 'ตำแหน่ง GPS ห่างจากตำแหน่งที่เคยแจ้งของจุดนี้มากผิดปกติ',
+      locale: 'th-TH'
     },
     en: {
-      title: 'Nationwide Hazard Statistics Map',
-      subtitle: 'Real-time railway crossing accident analytics with next-gen glowing interface',
-      rangeHeader: '⚡ Time Range',
-      rangeToday: 'Today', range7d: '7 days', range30d: '30 days', rangeAll: 'All time',
-      regionHeader: '🌐 Filter by Region',
-      regionAll: 'Whole Country', regionNorth: 'North', regionNortheast: 'Northeast',
-      regionCentral: 'Central', regionEast: 'East', regionWest: 'West', regionSouth: 'South',
-      legendNone: 'No data', legendLow: 'Low (1–2)', legendMid: 'Medium (3–5)', legendHigh: 'High (6+)',
-      statTotalLabel: 'Total Incidents', statProvincesLabel: 'Provinces Affected', statUnmappedLabel: 'No Coordinates',
-      mapHeader: '🗺️ Province Frequency Map',
-      searchPlaceholder: 'Search province, e.g. Bangkok', searchBtn: 'Search', mapLoading: 'Syncing and rendering Cyber map...',
-      topListHeader: '🏆 Top Provinces by Incidents', noData: 'No data available',
-      downloadAllBtn: '📥 Download Range Report (CSV)', detailCountLabel: 'Incidents in Range', detailTypesLabel: 'Risk Types',
-      detailDownloadBtn: '📥 Download Province Data (CSV)', noGpsData: 'No geolocated incidents in this range/region',
-      mapLoadFailed: 'Map load failed. Use ranking list below.', openInMaps: 'Open in Google Maps',
-      noDetailText: 'No additional details', provincePrefix: 'Province_', searchNotFound: 'Province not found: "',
-      csvDownloaded: 'CSV report downloaded successfully', locale: 'en-GB',
-      regionMap: {all:'Whole Country', north:'North', northeast:'Northeast', central:'Central', east:'East', west:'West', south:'South'}
+      title: 'Level Crossing Hazard Statistics',
+      subtitle: 'Live data connected from the public hazard report form (submitted via QR code)',
+      statTotalLabel: 'Total', statMonthLabel: 'This month', statCrossingsLabel: 'Crossings reported',
+      mapLink: 'View map statistics by province →',
+      refreshBtn: 'Refresh latest data',
+      byTypeHeader: 'By incident type',
+      byCrossingHeader: 'Crossings with the most reports',
+      recentHeader: 'Recent reports',
+      filterPlaceholder: 'Filter by crossing ID, e.g. CR-001',
+      clearBtn: 'Clear',
+      thTime: 'Time', thCrossing: 'Crossing', thType: 'Type',
+      noMatch: 'No results match your search',
+      noData: 'No data yet',
+      viewLink: 'View ›',
+      detailCrossingLabel: 'Crossing ID',
+      detailTimeLabel: 'Reported at',
+      detailNoteLabel: 'Details reported',
+      detailGpsLabel: 'GPS location',
+      detailPhotoLabel: 'Attached photo',
+      noDetailText: 'No additional details',
+      openInMaps: 'Open in Google Maps',
+      thTrust: 'Trust',
+      trustTitle: 'Trust score (a screening aid only, not a final verdict)',
+      trustHigh: 'High confidence',
+      trustMedium: 'Worth double-checking',
+      trustLow: 'Low confidence — verify before acting',
+      trustDisclaimer: 'This score is only a screening signal, not a final verdict on whether the report is genuine. Always apply staff judgment as well.',
+      reasonGps: 'GPS location attached',
+      reasonNoGps: 'No GPS location attached',
+      reasonPhoto: 'Photo attached',
+      reasonNoPhoto: 'No photo attached',
+      reasonDetails: 'Includes clear additional details',
+      reasonSuspicious: 'Contains wording suggesting test/spam data',
+      reasonGpsDrift: 'GPS location is unusually far from previous reports at this crossing',
+      locale: 'en-GB'
     }
   };
   function t(key){ return (I18N[currentLang] && I18N[currentLang][key]) || key; }
@@ -469,12 +555,17 @@
     currentLang = (lang === 'en') ? 'en' : 'th';
     document.documentElement.setAttribute('lang', currentLang);
     langToggle.innerHTML = currentLang === 'en' ? FLAG_GB : FLAG_TH;
-    document.querySelectorAll('[data-i18n]').forEach(function(el){ el.textContent = t(el.getAttribute('data-i18n')); });
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){ el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder'))); });
-    if (dataReady) renderAll();
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+      el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){
+      el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder')));
+    });
+    if (typeof renderAll === 'function' && incidentsLoaded) renderAll();
   }
   var savedLang = null;
   try { savedLang = localStorage.getItem(LANG_KEY); } catch(e){}
+  var incidentsLoaded = false;
   applyLang(savedLang === 'en' ? 'en' : 'th');
   langToggle.addEventListener('click', function(){
     var next = currentLang === 'en' ? 'th' : 'en';
@@ -482,51 +573,26 @@
     try { localStorage.setItem(LANG_KEY, next); } catch(e){}
   });
 
+  /* ---------- floating train nav ---------- */
+  (function(){
+    var trainBtn = document.getElementById('trainNavBtn');
+    var trainMenu = document.getElementById('trainMenu');
+    trainBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      trainMenu.classList.toggle('open');
+    });
+    document.addEventListener('click', function(e){
+      if (!trainMenu.contains(e.target) && e.target !== trainBtn) trainMenu.classList.remove('open');
+    });
+    var link = trainMenu.querySelector('[data-page="stats"]');
+    if (link) link.classList.add('current');
+  })();
+
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzq_lB981Yq4JZKKMMy5olDkf3xIaJgoZODZrWs7PwGB0r0t7YvtPQEmNVfxHCa9rb85g/exec';
-  var GEOJSON_URL = 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json';
-
-  var RAW_PROVINCES = [
-    ['Bangkok','กรุงเทพมหานคร','central'],['Nonthaburi','นนทบุรี','central'],['Pathum Thani','ปทุมธานี','central'],
-    ['Samut Prakan','สมุทรปราการ','central'],['Nakhon Pathom','นครปฐม','central'],['Samut Sakhon','สมุทรสาคร','central'],
-    ['Samut Songkhram','สมุทรสงคราม','central'],['Phra Nakhon Si Ayutthaya','พระนครศรีอยุธยา','central'],
-    ['Ang Thong','อ่างทอง','central'],['Suphan Buri','สุพรรณบุรี','central'],['Lop Buri','ลพบุรี','central'],
-    ['Saraburi','สระบุรี','central'],['Sing Buri','สิงห์บุรี','central'],['Chai Nat','ชัยนาท','central'],
-    ['Nakhon Nayok','นครนายก','central'],['Chon Buri','ชลบุรี','east'],['Rayong','ระยอง','east'],
-    ['Chanthaburi','จันทบุรี','east'],['Trat','ตราด','east'],['Chachoengsao','ฉะเชิงเทรา','east'],
-    ['Prachin Buri','ปราจีนบุรี','east'],['Sa Kaeo','สระแก้ว','east'],['Kanchanaburi','กาญจนบุรี','west'],
-    ['Ratchaburi','ราชบุรี','west'],['Phetchaburi','เพชรบุรี','west'],['Prachuap Khiri Khan','ประจวบคีรีขันธ์','west'],
-    ['Chiang Mai','เชียงใหม่','north'],['Chiang Rai','เชียงราย','north'],['Lamphun','ลำพูน','north'],
-    ['Lampang','ลำปาง','north'],['Phrae','แพร่','north'],['Nan','น่าน','north'],['Phayao','พะเยา','north'],
-    ['Mae Hong Son','แม่ฮ่องสอน','north'],['Uttaradit','อุตรดิตถ์','north'],['Sukhothai','สุโขทัย','north'],
-    ['Tak','ตาก','north'],['Kamphaeng Phet','กำแพงเพชร','north'],['Phichit','พิจิตร','north'],
-    ['Phitsanulok','พิษณุโลก','north'],['Phetchabun','เพชรบูรณ์','north'],['Nakhon Sawan','นครสวรรค์','north'],
-    ['Uthai Thani','อุทัยธานี','north'],['Nakhon Ratchasima','นครราชสีมา','northeast'],['Buri Ram','บุรีรัมย์','northeast'],
-    ['Surin','สุรินทร์','northeast'],['Si Sa Ket','ศรีสะเกษ','northeast'],['Ubon Ratchathani','อุบลราชธานี','northeast'],
-    ['Yasothon','ยโสธร','northeast'],['Chaiyaphum','ชัยภูมิ','northeast'],['Amnat Charoen','อำนาจเจริญ','northeast'],
-    ['Nong Bua Lam Phu','หนองบัวลำภู','northeast'],['Khon Kaen','ขอนแก่น','northeast'],['Udon Thani','อุดรธานี','northeast'],
-    ['Loei','เลย','northeast'],['Nong Khai','หนองคาย','northeast'],['Maha Sarakham','มหาสารคาม','northeast'],
-    ['Roi Et','ร้อยเอ็ด','northeast'],['Kalasin','กาฬสินธุ์','northeast'],['Sakon Nakhon','สกลนคร','northeast'],
-    ['Nakhon Phanom','นครพนม','northeast'],['Mukdahan','มุกดาหาร','northeast'],['Bueng Kan','บึงกาฬ','northeast'],
-    ['Chumphon','ชุมพร','south'],['Ranong','ระนอง','south'],['Surat Thani','สุราษฎร์ธานี','south'],
-    ['Phang Nga','พังงา','south'],['Phuket','ภูเก็ต','south'],['Krabi','กระบี่','south'],
-    ['Nakhon Si Thammarat','นครศรีธรรมราช','south'],['Trang','ตรัง','south'],['Phatthalung','พัทลุง','south'],
-    ['Satun','สตูล','south'],['Songkhla','สงขลา','south'],['Pattani','ปัตตานี','south'],
-    ['Yala','ยะลา','south'],['Narathiwat','นราธิวาส','south']
-  ];
-
-  var PROVINCE_LOOKUP = {};
-  function norm(s){ return String(s||'').toLowerCase().replace(/[^a-zก-ฮ]/g,''); }
-  RAW_PROVINCES.forEach(function(row){
-    PROVINCE_LOOKUP[norm(row[0])] = {en:row[0], th:row[1], region:row[2]};
-    PROVINCE_LOOKUP[norm(row[1])] = {en:row[0], th:row[1], region:row[2]};
-  });
-
   var incidents = [];
-  var geoData = null;
-  var geoLoadFailed = false;
-  var provinceCounts = {};
-  var currentRange = '7d';
-  var currentRegion = 'all';
+
+  var lightbox = document.getElementById('lightbox');
+  lightbox.addEventListener('click', function(){ lightbox.style.display = 'none'; });
 
   function toDriveThumb(url){
     if (!url) return url;
@@ -540,348 +606,228 @@
     });
   }
 
-  function pointInRing(pt, ring){
-    var x = pt[0], y = pt[1], inside = false;
-    for (var i=0,j=ring.length-1; i<ring.length; j=i++){
-      var xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
-      var intersect = ((yi>y) !== (yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi);
-      if (intersect) inside = !inside;
+  var SUSPICIOUS_PATTERN = /ทดสอบ|test|bot|xxx+|asdf|1234|สแปม|spam/i;
+
+  function computeTrust(incident, allIncidents){
+    var score = 0;
+    var reasons = [];
+    var hasGps = incident.gps && typeof incident.gps === 'string' && incident.gps.indexOf(',') !== -1;
+    var hasPhoto = !!incident.photoUrl;
+    var noteLen = (incident.note || '').trim().length;
+    var crossingId = (incident.crossingId || '').trim();
+
+    if (hasGps){ score += 2; reasons.push({key:'reasonGps', positive:true}); }
+    else{ reasons.push({key:'reasonNoGps', positive:false}); }
+
+    if (hasPhoto){ score += 2; reasons.push({key:'reasonPhoto', positive:true}); }
+    else{ reasons.push({key:'reasonNoPhoto', positive:false}); }
+
+    if (noteLen > 10){ score += 1; reasons.push({key:'reasonDetails', positive:true}); }
+    if (crossingId && crossingId !== 'CR-000'){ score += 1; }
+
+    if (SUSPICIOUS_PATTERN.test(crossingId) || SUSPICIOUS_PATTERN.test(incident.note || '')){
+      score -= 3;
+      reasons.push({key:'reasonSuspicious', positive:false});
     }
-    return inside;
+
+    var level = score >= 4 ? 'high' : (score >= 1 ? 'medium' : 'low');
+    return {score: score, level: level, reasons: reasons};
   }
-  function pointInPolygon(pt, poly){
-    if (!pointInRing(pt, poly[0])) return false;
-    for (var k=1;k<poly.length;k++){ if (pointInRing(pt, poly[k])) return false; }
-    return true;
-  }
-  function pointInGeometry(pt, geom){
-    if (!geom) return false;
-    if (geom.type === 'Polygon') return pointInPolygon(pt, geom.coordinates);
-    if (geom.type === 'MultiPolygon') return geom.coordinates.some(function(p){ return pointInPolygon(pt, p); });
-    return false;
-  }
+
+  var TRUST_BADGE = { high: '🟢', medium: '🟡', low: '🔴' };
 
   async function loadIncidents(){
     try{
-      var resp = await fetch(SCRIPT_URL, { method:'GET' });
-      var data = await resp.json();
-      incidents = Array.isArray(data) ? data : [];
-    }catch(e){ incidents = []; }
-  }
-
-  async function loadGeo(){
-    try{
-      var resp = await fetch(GEOJSON_URL);
-      geoData = await resp.json();
-      geoData.features.forEach(function(f){
-        var key = norm(f.properties && f.properties.name);
-        var match = PROVINCE_LOOKUP[key];
-        f.properties._th = match ? match.th : (f.properties.name || 'ไม่ทราบชื่อ');
-        f.properties._region = match ? match.region : 'central';
-      });
-    }catch(e){ geoLoadFailed = true; }
-  }
-
-  function assignProvince(incident){
-    if (incident._province !== undefined) return incident._province;
-    var gps = incident.gps;
-    if (!gps || typeof gps !== 'string' || gps.indexOf(',') === -1){ incident._province = null; return null; }
-    var parts = gps.split(',');
-    var lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
-    if (isNaN(lat) || isNaN(lng)){ incident._province = null; return null; }
-    incident._lat = lat; incident._lng = lng;
-    if (!geoData){ incident._province = null; return null; }
-    var pt = [lng, lat];
-    for (var i=0;i<geoData.features.length;i++){
-      var f = geoData.features[i];
-      if (pointInGeometry(pt, f.geometry)){
-        incident._province = f.properties._th;
-        incident._region = f.properties._region;
-        return incident._province;
-      }
+      var resp = await fetch(SCRIPT_URL, { method: 'GET' });
+      incidents = await resp.json();
+      if (!Array.isArray(incidents)) incidents = [];
+    }catch(e){
+      incidents = [];
     }
-    incident._province = null;
-    return null;
   }
 
-  function withinRange(ts, rangeKey){
-    var d = new Date(ts), now = new Date();
-    if (isNaN(d.getTime())) return false;
-    if (rangeKey === 'today'){
-      return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && d.getDate()===now.getDate();
-    }
-    if (rangeKey === '7d') return (now - d) <= 7*86400000;
-    if (rangeKey === '30d') return (now - d) <= 30*86400000;
-    return true;
+  function countBy(arr, key){
+    var counts = {};
+    arr.forEach(function(i){counts[i[key]] = (counts[i[key]] || 0) + 1;});
+    return Object.entries(counts).sort(function(a,b){return b[1]-a[1];});
   }
 
-  function fmtDate(d){ return d.toLocaleDateString(t('locale'),{day:'2-digit',month:'short',year:'numeric'}); }
-  function rangeLabelText(rangeKey){
-    var now = new Date();
-    if (rangeKey === 'today') return (currentLang==='en' ? 'Data for ' : 'แสดงข้อมูลประจำวันที่ ') + fmtDate(now);
-    if (rangeKey === '7d') return (currentLang==='en' ? 'Data from ' : 'แสดงข้อมูลช่วงวันที่ ') + fmtDate(new Date(now-7*86400000)) + ' – ' + fmtDate(now);
-    if (rangeKey === '30d') return (currentLang==='en' ? 'Data from ' : 'แสดงข้อมูลช่วงวันที่ ') + fmtDate(new Date(now-30*86400000)) + ' – ' + fmtDate(now);
-    return currentLang==='en' ? 'All historical data recorded' : 'แสดงข้อมูลสถิติทั้งหมดในระบบ Cyber Grid';
-  }
-
-  function severityColor(count){
-    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    if (!count || count <= 0) return isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)';
-    if (count <= 2) return '#10B981';
-    if (count <= 5) return '#F59E0B';
-    return '#FF2E63';
-  }
-
-  function getFilteredIncidents(){
-    return incidents.filter(function(i){ return withinRange(i.timestamp, currentRange); });
-  }
-
-  function computeProvinceCounts(filtered){
-    var map = {};
-    filtered.forEach(function(i){
-      var prov = assignProvince(i);
-      if (!prov) return;
-      if (currentRegion !== 'all' && i._region !== currentRegion) return;
-      if (!map[prov]) map[prov] = [];
-      map[prov].push(i);
-    });
-    return map;
-  }
-
-  function renderRangeUI(){
-    document.querySelectorAll('.range-tab').forEach(function(tab){
-      tab.classList.toggle('active', tab.dataset.range === currentRange);
-    });
-    document.getElementById('rangeLabel').textContent = rangeLabelText(currentRange);
-  }
-
-  function renderSummary(filtered, mapped){
-    document.getElementById('statTotal').textContent = filtered.length;
-    document.getElementById('statProvinces').textContent = Object.keys(mapped).length;
-    var unmapped = filtered.filter(function(i){ return !assignProvince(i); }).length;
-    document.getElementById('statUnmapped').textContent = unmapped;
-  }
-
-  function renderTopList(mapped){
-    var el = document.getElementById('topList');
-    var pairs = Object.keys(mapped).map(function(k){ return [k, mapped[k].length]; })
-      .sort(function(a,b){ return b[1]-a[1]; });
+  function renderBars(containerId, pairs){
+    var el = document.getElementById(containerId);
     if (!pairs.length){
-      el.innerHTML = '<div class="empty">' + t('noGpsData') + '</div>';
+      el.innerHTML = '<div class="empty">' + t('noData') + '</div>';
       return;
     }
-    el.innerHTML = pairs.slice(0,15).map(function(p){
-      var color = severityColor(p[1]);
-      return '<div class="top-row" data-province="' + escapeHtml(p[0]) + '">'
-        + '<span class="dot" style="background:' + color + '"></span>'
-        + '<span class="pname">' + escapeHtml(p[0]) + '</span>'
-        + '<span class="pcount">' + p[1] + '</span>'
+    var max = pairs[0][1];
+    el.innerHTML = pairs.slice(0,6).map(function(p){
+      var pct = Math.round((p[1]/max)*100);
+      return '<div class="bar-row">'
+        + '<div class="name">' + escapeHtml(p[0]) + '</div>'
+        + '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>'
+        + '<div class="bar-count">' + p[1] + '</div>'
         + '</div>';
     }).join('');
-    el.querySelectorAll('.top-row').forEach(function(row){
-      row.addEventListener('click', function(){ openProvinceDetail(row.dataset.province, mapped[row.dataset.province] || []); });
-    });
   }
 
-  var mapSvg = null, mapG = null, mapZoomBehavior = null;
+  var currentPage = 1;
+  var PAGE_SIZE = 10;
 
-  function renderMap(mapped){
-    var wrap = document.getElementById('mapWrap');
-    mapSvg = null; mapG = null; mapZoomBehavior = null;
-    if (geoLoadFailed || !geoData){
-      wrap.innerHTML = '<div class="map-msg">' + t('mapLoadFailed') + '</div>';
+  function renderTable(filter, page){
+    if (page) currentPage = page;
+    var rows = incidents.slice().sort(function(a,b){return new Date(b.timestamp)-new Date(a.timestamp);});
+    if (filter){
+      rows = rows.filter(function(i){return (i.crossingId || '').toLowerCase().indexOf(filter.toLowerCase()) !== -1;});
+    }
+    var tbody = document.getElementById('incidentTable');
+    var emptyEl = document.getElementById('tableEmpty');
+    var pagerEl = document.getElementById('pagination');
+    if (!rows.length){
+      tbody.innerHTML = '';
+      emptyEl.style.display = 'block';
+      pagerEl.style.display = 'none';
       return;
     }
-    var width = 640, height = 640;
-    wrap.innerHTML = '';
-    var svg = d3.select(wrap).append('svg').attr('viewBox', '0 0 ' + width + ' ' + height);
-    var g = svg.append('g');
-    var projection = d3.geoMercator().fitSize([width, height], geoData);
-    var path = d3.geoPath().projection(projection);
+    emptyEl.style.display = 'none';
 
-    g.selectAll('path')
-      .data(geoData.features)
-      .enter()
-      .append('path')
-      .attr('class', function(f){
-        var dim = currentRegion !== 'all' && f.properties._region !== currentRegion;
-        return 'province-path' + (dim ? ' dimmed' : '');
-      })
-      .attr('d', path)
-      .attr('fill', function(f){
-        var count = (mapped[f.properties._th] || []).length;
-        return severityColor(count);
-      })
-      .on('click', function(event, f){
-        var list = mapped[f.properties._th] || [];
-        openProvinceDetail(f.properties._th, list);
-      })
-      .append('title')
-      .text(function(f){
-        var count = (mapped[f.properties._th] || []).length;
-        return f.properties._th + ': ' + count + ' incidents';
+    var totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+    var startIdx = (currentPage - 1) * PAGE_SIZE;
+    var pageRows = rows.slice(startIdx, startIdx + PAGE_SIZE);
+
+    tbody.innerHTML = pageRows.map(function(i){
+      var d = new Date(i.timestamp);
+      var timeStr = d.toLocaleDateString(t('locale'),{day:'2-digit',month:'2-digit'}) + ' '
+        + d.toLocaleTimeString(t('locale'),{hour:'2-digit',minute:'2-digit'});
+      var trustBadge = TRUST_BADGE.medium;
+      try{
+        var trust = computeTrust(i, incidents);
+        trustBadge = TRUST_BADGE[trust.level] || TRUST_BADGE.medium;
+      }catch(e){}
+      return '<tr class="detail-row" data-id="' + escapeHtml(i.id) + '" style="cursor:pointer;">'
+        + '<td class="mono">' + timeStr + '</td>'
+        + '<td class="mono">' + escapeHtml(i.crossingId || '-') + '</td>'
+        + '<td><span class="badge">' + escapeHtml(i.type || '-') + '</span></td>'
+        + '<td style="text-align:center;font-size:13px;" title="' + escapeHtml(t('trustTitle')) + '">' + trustBadge + '</td>'
+        + '</tr>';
+    }).join('');
+    tbody.querySelectorAll('.detail-row').forEach(function(row){
+      row.addEventListener('click', function(){
+        var rec = incidents.find(function(x){return x.id === row.dataset.id;});
+        if (rec) openDetail(rec);
       });
+    });
 
-    var zoomBehavior = d3.zoom()
-      .scaleExtent([1, 8])
-      .on('zoom', function(event){ g.attr('transform', event.transform); });
-    svg.call(zoomBehavior);
-
-    mapSvg = svg;
-    mapG = g;
-    mapZoomBehavior = zoomBehavior;
+    renderPagination(totalPages, filter);
   }
 
-  function initMapControls(){
-    document.getElementById('zoomInBtn').addEventListener('click', function(){
-      if (mapSvg && mapZoomBehavior) mapSvg.transition().duration(250).call(mapZoomBehavior.scaleBy, 1.4);
-    });
-    document.getElementById('zoomOutBtn').addEventListener('click', function(){
-      if (mapSvg && mapZoomBehavior) mapSvg.transition().duration(250).call(mapZoomBehavior.scaleBy, 1/1.4);
-    });
-    document.getElementById('zoomResetBtn').addEventListener('click', function(){
-      if (mapSvg && mapZoomBehavior) mapSvg.transition().duration(350).call(mapZoomBehavior.transform, d3.zoomIdentity);
-    });
-
-    var searchInput = document.getElementById('provinceSearch');
-    var searchMsg = document.getElementById('searchMsg');
-    function doSearch(){
-      var q = searchInput.value.trim();
-      searchMsg.textContent = '';
-      if (!q) return;
-      if (!geoData) return;
-      var match = geoData.features.find(function(f){ return f.properties._th.indexOf(q) !== -1; });
-      if (!match){ searchMsg.textContent = t('searchNotFound') + q + '"'; return; }
-      zoomToFeature(match);
-      var list = provinceCounts[match.properties._th] || [];
-      openProvinceDetail(match.properties._th, list);
+  function renderPagination(totalPages, filter){
+    var pagerEl = document.getElementById('pagination');
+    if (totalPages <= 1){
+      pagerEl.style.display = 'none';
+      pagerEl.innerHTML = '';
+      return;
     }
-    document.getElementById('searchBtn').addEventListener('click', doSearch);
-    searchInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') doSearch(); });
+    pagerEl.style.display = 'flex';
+
+    function pageBtn(p, label, disabled, active){
+      return '<button type="button" data-page="' + p + '"' + (disabled?' disabled':'') + (active?' class="active"':'') + '>' + label + '</button>';
+    }
+    function dots(){ return '<span style="color:var(--paper-dim);padding:0 2px;">…</span>'; }
+
+    var html = pageBtn(currentPage-1, '‹', currentPage<=1, false);
+    var windowSize = 1;
+    for (var p = 1; p <= totalPages; p++){
+      var edge = (p === 1 || p === totalPages);
+      var near = Math.abs(p - currentPage) <= windowSize;
+      if (edge || near){
+        html += pageBtn(p, String(p), false, p===currentPage);
+      } else if (p === 2 || p === totalPages - 1){
+        html += dots();
+      }
+    }
+    html += pageBtn(currentPage+1, '›', currentPage>=totalPages, false);
+    pagerEl.innerHTML = html;
   }
 
-  function zoomToFeature(f){
-    if (!mapSvg || !mapZoomBehavior || !geoData) return;
-    var width = 640, height = 640;
-    var projection = d3.geoMercator().fitSize([width, height], geoData);
-    var path = d3.geoPath().projection(projection);
-    var b = path.bounds(f);
-    var dx = b[1][0] - b[0][0], dy = b[1][1] - b[0][1];
-    var cx = (b[0][0] + b[1][0]) / 2, cy = (b[0][1] + b[1][1]) / 2;
-    var scale = Math.max(1, Math.min(8, 0.8 / Math.max(dx / width, dy / height)));
-    var tx = width / 2 - scale * cx, ty = height / 2 - scale * cy;
-    mapSvg.transition().duration(500)
-      .call(mapZoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
-  }
+  function openDetail(rec){
+    document.getElementById('detailType').textContent = rec.type || '-';
+    document.getElementById('detailCrossing').textContent = rec.crossingId || '-';
+    var d = new Date(rec.timestamp);
+    document.getElementById('detailTime').textContent = isNaN(d.getTime()) ? '-' :
+      d.toLocaleDateString(t('locale'),{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' +
+      d.toLocaleTimeString(t('locale'),{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('detailNote').textContent = rec.note ? rec.note : t('noDetailText');
 
-  function renderAll(){
-    renderRangeUI();
-    document.getElementById('regionSelect').value = currentRegion;
-    var filtered = getFilteredIncidents();
-    var mapped = computeProvinceCounts(filtered);
-    provinceCounts = mapped;
-    renderSummary(filtered, mapped);
-    renderTopList(mapped);
-    renderMap(mapped);
-  }
-
-  function openProvinceDetail(provinceName, list){
-    document.getElementById('detailTitle').textContent = provinceName;
-    document.getElementById('detailRegionText').textContent = 'REGION: ' + (I18N[currentLang].regionMap[
-      (list[0] && list[0]._region) || 'central'
-    ] || 'Central').toUpperCase();
-    document.getElementById('detailCount').textContent = list.length;
-    var types = {};
-    list.forEach(function(i){ types[i.type || 'อื่นๆ'] = true; });
-    document.getElementById('detailTypesCount').textContent = Object.keys(types).length;
-
-    var sorted = list.slice().sort(function(a,b){ return new Date(b.timestamp) - new Date(a.timestamp); });
-    var container = document.getElementById('detailIncidents');
-    if (!sorted.length){
-      container.innerHTML = '<div class="empty">ไม่มีรายงานอุบัติเหตุในช่วงเวลานี้</div>';
+    var gpsWrap = document.getElementById('detailGpsWrap');
+    if (rec.gps){
+      gpsWrap.style.display = 'block';
+      document.getElementById('detailGps').innerHTML = escapeHtml(rec.gps) +
+        ' &nbsp; <a href="https://maps.google.com/?q=' + encodeURIComponent(rec.gps) + '" target="_blank" rel="noopener" style="color:var(--green);">' + escapeHtml(t('openInMaps')) + '</a>';
     } else {
-      container.innerHTML = sorted.map(function(i){
-        var d = new Date(i.timestamp);
-        var timeStr = isNaN(d.getTime()) ? '-' : d.toLocaleDateString(t('locale'),{day:'2-digit',month:'2-digit',year:'numeric'})
-          + ' ' + d.toLocaleTimeString(t('locale'),{hour:'2-digit',minute:'2-digit'});
-        var gpsLink = '';
-        if (i._lat && i._lng){
-          gpsLink = '<a href="https://maps.google.com/?q=' + i._lat + ',' + i._lng + '" target="_blank" rel="noopener">📍 ' + escapeHtml(t('openInMaps')) + '</a>';
-        }
-        var photoHtml = i.photoUrl
-          ? '<img class="incident-photo" src="' + escapeHtml(toDriveThumb(i.photoUrl)) + '" loading="lazy" onerror="this.style.display=\'none\'">'
-          : '';
-        return '<div class="incident-card">'
-          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span class="badge">' + escapeHtml(i.type || 'อื่นๆ') + '</span>'
-          + '<span class="mono" style="font-size:12px;color:var(--text-muted);">' + escapeHtml(i.crossingId || '-') + '</span></div>'
-          + '<div class="incident-note">' + (i.note ? escapeHtml(i.note) : '<span style="color:var(--text-muted);">' + escapeHtml(t('noDetailText')) + '</span>') + '</div>'
-          + '<div class="incident-meta"><span>🕒 ' + timeStr + '</span>' + (gpsLink ? '<span>' + gpsLink + '</span>' : '') + '</div>'
-          + photoHtml
-          + '</div>';
-      }).join('');
+      gpsWrap.style.display = 'none';
     }
 
-    document.getElementById('detailDownloadBtn').onclick = function(){
-      downloadCsv(sorted, t('provincePrefix') + provinceName);
-    };
+    var photoWrap = document.getElementById('detailPhotoWrap');
+    if (rec.photoUrl){
+      photoWrap.style.display = 'block';
+      document.getElementById('detailPhoto').src = toDriveThumb(rec.photoUrl);
+    } else {
+      photoWrap.style.display = 'none';
+    }
 
-    document.getElementById('detailOverlay').style.display = 'flex';
+    var trust = computeTrust(rec, incidents);
+    var TRUST_LABEL_KEY = { high: 'trustHigh', medium: 'trustMedium', low: 'trustLow' };
+    document.getElementById('detailTrustBadge').textContent = TRUST_BADGE[trust.level];
+    document.getElementById('detailTrustLabel').textContent = t(TRUST_LABEL_KEY[trust.level]);
+    document.getElementById('detailTrustReasons').innerHTML = trust.reasons.map(function(r){
+      var color = r.positive ? 'var(--green)' : 'var(--red)';
+      return '<li style="color:' + color + ';">' + escapeHtml(t(r.key)) + '</li>';
+    }).join('');
+
+    lightbox.style.display = 'flex';
   }
 
-  document.getElementById('detailClose').addEventListener('click', function(){
-    document.getElementById('detailOverlay').style.display = 'none';
-  });
-  document.getElementById('detailOverlay').addEventListener('click', function(e){
-    if (e.target === this) this.style.display = 'none';
-  });
+  async function renderAll(){
+    await loadIncidents();
+    var total = incidents.length;
+    document.getElementById('statTotal').textContent = total;
 
-  function downloadCsv(list, labelForFile){
-    var headers = ['id','crossingId','province','type','note','gps','photoUrl','timestamp'];
-    var lines = [headers.join(',')];
-    list.forEach(function(i){
-      var row = [
-        i.id || '', i.crossingId || '', i._province || '', i.type || '',
-        (i.note || '').replace(/[\r\n]+/g,' ').replace(/"/g,'""'),
-        i.gps || '', i.photoUrl || '', i.timestamp || ''
-      ].map(function(v){ return '"' + String(v).replace(/"/g,'""') + '"'; });
-      lines.push(row.join(','));
-    });
-    var csv = '\uFEFF' + lines.join('\r\n');
-    var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    var dateStr = new Date().toISOString().slice(0,10);
-    a.href = url;
-    a.download = 'railway-cyber-report_' + labelForFile + '_' + dateStr + '.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast(t('csvDownloaded'));
+    var now = new Date();
+    var thisMonth = incidents.filter(function(i){
+      var d = new Date(i.timestamp);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+    document.getElementById('statMonth').textContent = thisMonth;
+
+    var crossingSet = {};
+    incidents.forEach(function(i){crossingSet[i.crossingId] = true;});
+    document.getElementById('statCrossings').textContent = Object.keys(crossingSet).length;
+
+    renderBars('typeBars', countBy(incidents, 'type'));
+    renderBars('crossingBars', countBy(incidents, 'crossingId'));
+    renderTable(document.getElementById('filterInput').value.trim());
   }
 
-  document.getElementById('downloadAllBtn').addEventListener('click', function(){
-    var filtered = getFilteredIncidents();
-    downloadCsv(filtered, currentRange);
+  document.getElementById('filterInput').addEventListener('input', function(){
+    renderTable(this.value.trim(), 1);
+  });
+  document.getElementById('filterClear').addEventListener('click', function(){
+    document.getElementById('filterInput').value = '';
+    renderTable('', 1);
+  });
+  document.getElementById('refreshBtn').addEventListener('click', renderAll);
+
+  document.getElementById('pagination').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-page]');
+    if (!btn || btn.disabled) return;
+    var targetPage = parseInt(btn.getAttribute('data-page'), 10);
+    if (isNaN(targetPage)) return;
+    renderTable(document.getElementById('filterInput').value.trim(), targetPage);
+    document.getElementById('pagination').scrollIntoView({behavior:'smooth', block:'nearest'});
   });
 
-  document.querySelectorAll('.range-tab').forEach(function(tab){
-    tab.addEventListener('click', function(){
-      currentRange = tab.dataset.range;
-      renderAll();
-    });
-  });
-  document.getElementById('regionSelect').addEventListener('change', function(){
-    currentRegion = this.value;
-    renderAll();
-  });
-
-  (async function init(){
-    initMapControls();
-    await Promise.all([loadIncidents(), loadGeo()]);
-    dataReady = true;
-    renderAll();
-  })();
+  renderAll().then(function(){ incidentsLoaded = true; });
 })();
 </script>
 </body>
