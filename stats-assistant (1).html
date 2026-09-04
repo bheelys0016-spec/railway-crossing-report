@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script>
+(function(){
+  var ok = false;
+  try { ok = sessionStorage.getItem('railway-auth') === '1'; } catch(e){}
+  if (!ok) { window.location.replace('login.html?redirect=stats-assistant.html'); }
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ถาม-ตอบสถิติ — เหตุอันตรายจุดตัดทางรถไฟ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --steel-900:#F8FAFC;
+    --steel-800:rgba(255,255,255,.94);
+    --steel-700:#F2F2F3;
+    --steel-600:#E3E3E5;
+    --steel-line:#DADADD;
+    --paper:#1C1C1E;
+    --paper-dim:#6E6E73;
+    --amber:#D97706;
+    --amber-glow:rgba(217,119,6,.35);
+    --amber-dim:#8C6408;
+    --red:#DC2626;
+    --red-glow:rgba(220,38,38,.35);
+    --red-dim:#FDE7E9;
+    --green:#2F5233;
+    --green-dim:#DCEBDD;
+    --deco-stroke:var(--red);
+    --deco-opacity:.85;
+    --radius:16px;
+    --card-shadow:0 12px 32px -4px rgba(15,23,42,.08), 0 0 20px rgba(185,28,28,.06);
+  }
+  html[data-theme="dark"]{
+    --steel-900:#070A11;
+    --steel-800:rgba(20,27,44,.88);
+    --steel-700:#372316;
+    --steel-600:#513521;
+    --steel-line:#63432A;
+    --paper:#F3E7D3;
+    --paper-dim:#C6A87D;
+    --amber:#F59E0B;
+    --amber-glow:rgba(245,158,11,.45);
+    --amber-dim:#8C6A16;
+    --red:#EF4444;
+    --red-glow:rgba(239,68,68,.45);
+    --red-dim:#441313;
+    --green:#3E6B47;
+    --green-dim:#1B3320;
+    --deco-stroke:var(--amber);
+    --deco-opacity:.95;
+    --card-shadow:0 12px 35px rgba(0,0,0,.4), 0 0 25px rgba(245,158,11,.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--steel-900);
+    color:var(--paper);
+    font-family:'Prompt',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 0 90px;position:relative;z-index:1;}
+  header{padding:24px 18px 0;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--red);margin:0 0 6px;
+  }
+  h1{font-family:'Oswald',sans-serif;font-weight:700;font-size:22px;letter-spacing:.01em;
+     text-transform:uppercase;margin:0 0 4px;color:var(--paper);}
+  .sub{font-size:12.5px;color:var(--paper-dim);margin:0;line-height:1.6;}
+
+  main{padding:16px 18px 0;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+  .chip{
+    background:var(--steel-800);border:1px solid var(--steel-line);color:var(--paper-dim);
+    border-radius:20px;padding:7px 12px;font-size:12px;cursor:pointer;
+  }
+  .chip:hover{ border-color:var(--red); color:var(--paper); }
+
+  .chat-log{ margin-bottom:12px; }
+  .msg{ display:flex; margin-bottom:12px; }
+  .msg.user{ justify-content:flex-end; }
+  .bubble{
+    max-width:82%; padding:11px 14px; border-radius:14px; font-size:13.5px; line-height:1.65;
+    white-space:pre-wrap;
+  }
+  .msg.bot .bubble{
+    background:var(--steel-800); border:1px solid var(--steel-line); color:var(--paper);
+    border-bottom-left-radius:4px;
+  }
+  .msg.user .bubble{
+    background:var(--red); color:#fff; border-bottom-right-radius:4px;
+  }
+
+  .input-row{
+    position:fixed; left:0; right:0; bottom:0; z-index:70;
+    background:var(--steel-900); border-top:1px solid var(--steel-line);
+    padding:10px 18px calc(10px + env(safe-area-inset-bottom));
+  }
+  .input-row-inner{ max-width:640px; margin:0 auto; display:flex; gap:8px; }
+  .input-row input{
+    flex:1; background:var(--steel-700); border:1px solid var(--steel-line); color:var(--paper);
+    border-radius:22px; padding:11px 16px; font-size:13.5px; outline:none;
+  }
+  .input-row input:focus{ border-color:var(--red); }
+  .input-row button{
+    background:var(--red); border:none; color:#fff; border-radius:50%;
+    width:42px; height:42px; font-size:17px; cursor:pointer; flex:none;
+  }
+
+  .theme-toggle{
+    position:fixed;top:14px;right:14px;z-index:80;
+    width:42px;height:42px;border-radius:50%;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    color:var(--paper);font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:var(--card-shadow);
+    backdrop-filter:blur(6px);
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .theme-toggle:hover{ transform:translateY(-2px) scale(1.05); box-shadow:0 0 15px var(--amber-glow); }
+  .lang-toggle{
+    position:fixed;top:14px;right:64px;z-index:80;
+    width:42px;height:42px;border-radius:10px;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    cursor:pointer;padding:0;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:var(--card-shadow);
+    backdrop-filter:blur(6px);
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .lang-toggle:hover{ transform:translateY(-2px) scale(1.05); box-shadow:0 0 15px var(--amber-glow); }
+  .lang-toggle svg{ width:26px;height:18px;border-radius:3px;display:block; }
+  .bg-glow-container{ position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:0;overflow:hidden; }
+  .bg-glow-orb{ position:absolute;border-radius:50%;filter:blur(55px);opacity:.4;animation:floatOrb 20s ease-in-out infinite alternate; }
+  .orb-1{ top:-10%;left:10%;width:500px;height:500px;background:radial-gradient(circle,var(--red-glow),transparent 70%); }
+  .orb-2{ bottom:-10%;right:10%;width:550px;height:550px;background:radial-gradient(circle,var(--amber-glow),transparent 70%);animation-delay:-10s; }
+  @keyframes floatOrb{ 0%{transform:translate(0,0) scale(1);} 100%{transform:translate(30px,40px) scale(1.15);} }
+  #particleCanvas{ position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0; }
+  .rail-deco{
+    position:fixed;top:0;bottom:0;width:360px;pointer-events:none;z-index:0;
+    opacity:var(--deco-opacity);display:none;transition:opacity .3s ease;
+  }
+  .rail-deco.left{left:12px;} .rail-deco.right{right:12px;}
+  .rail-deco svg{width:100%;height:100%;}
+  @media (min-width:1280px){ .rail-deco{display:block;} }
+  @keyframes radarSweep{ to{ transform:rotate(360deg); } }
+  @keyframes pulseNode{ 0%,100%{transform:scale(1);opacity:.9;} 50%{transform:scale(1.35);opacity:.35;} }
+  @keyframes trainSpeedLines{ 0%{stroke-dashoffset:100;} 100%{stroke-dashoffset:0;} }
+  @keyframes waveFlow{ 0%{transform:translateX(0);} 100%{transform:translateX(-40px);} }
+  .anim-radar{ transform-origin:140px 300px; animation:radarSweep 22s linear infinite; }
+  .anim-pulse{ transform-origin:center; animation:pulseNode 5s ease-in-out infinite; }
+  .anim-dash{ stroke-dasharray:12 8; animation:trainSpeedLines 4.5s linear infinite; }
+  .anim-wave{ animation:waveFlow 7s linear infinite; }
+
+  .train-nav{ position:fixed; left:16px; bottom:80px; z-index:90; }
+  .train-nav-btn{
+    width:56px;height:56px;border-radius:50%;
+    background:var(--steel-800);border:2px solid var(--red);
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.18);
+    animation:trainBob 2.6s ease-in-out infinite;
+  }
+  @keyframes trainBob{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    50%{ transform:translateY(-4px) rotate(-4deg); }
+  }
+  .train-menu{
+    display:none;position:absolute;bottom:66px;left:0;
+    background:var(--steel-800);border:1px solid var(--steel-line);
+    border-radius:12px;padding:8px;min-width:190px;
+    box-shadow:0 6px 18px rgba(0,0,0,.2);
+  }
+  .train-menu.open{ display:block; }
+  .train-menu a{
+    display:flex;align-items:center;gap:9px;
+    padding:9px 10px;border-radius:8px;text-decoration:none;
+    color:var(--paper);font-size:13px;font-family:'Prompt',sans-serif;
+  }
+  .train-menu a:hover{ background:var(--steel-700); }
+  .train-menu a.current{ color:var(--red);font-weight:600; }
+  .train-menu .emoji{ font-size:16px; }
+</style>
+</head>
+<body>
+
+<div class="bg-glow-container">
+  <div class="bg-glow-orb orb-1"></div>
+  <div class="bg-glow-orb orb-2"></div>
+</div>
+<canvas id="particleCanvas"></canvas>
+
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="สลับโหมดกลางวัน/กลางคืน">☀️</button>
+<button class="lang-toggle" id="langToggle" type="button" aria-label="Switch language / เปลี่ยนภาษา">🇹🇭</button>
+
+<div class="train-nav">
+  <div class="train-menu" id="trainMenu">
+    <a href="index.html" data-page="index"><span class="emoji">📝</span> แจ้งเหตุ</a>
+    <a href="railway-crossing-stats.html" data-page="stats"><span class="emoji">📊</span> สถิติ</a>
+    <a href="railway-crossing-map-stats.html" data-page="map"><span class="emoji">🗺️</span> แผนที่สถิติ</a>
+    <a href="official-crossings-map.html" data-page="official"><span class="emoji">🛤️</span> บัญชีทางผ่าน รฟท.</a>
+    <a href="stats-assistant.html" data-page="assistant"><span class="emoji">🤖</span> ถาม-ตอบสถิติ</a>
+    <a href="risk-analytics.html" data-page="risk"><span class="emoji">📈</span> พยากรณ์ความเสี่ยง</a>
+    <a href="login-logs.html" data-page="logs"><span class="emoji">🔐</span> ประวัติการเข้าสู่ระบบ</a>
+  </div>
+  <button class="train-nav-btn" id="trainNavBtn" type="button" aria-label="เมนู">🚂</button>
+</div>
+
+<div class="rail-deco left" aria-hidden="true">
+  <svg viewBox="0 0 360 920" xmlns="http://www.w3.org/2000/svg" fill="none">
+    <defs>
+      <linearGradient id="gradRed" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#EF4444" />
+        <stop offset="100%" stop-color="#991B1B" />
+      </linearGradient>
+      <linearGradient id="gradAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#F59E0B" />
+        <stop offset="100%" stop-color="#B45309" />
+      </linearGradient>
+      <linearGradient id="gradTower" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="var(--paper-dim)" stop-opacity="0.1"/>
+        <stop offset="50%" stop-color="var(--paper)" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="var(--paper-dim)" stop-opacity="0.05"/>
+      </linearGradient>
+      
+      <filter id="glowLightRed" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="7" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+      <filter id="glowLightAmber" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="5" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+
+    <!-- Background Tech Grid Lines -->
+    <g opacity="0.18" stroke="var(--paper)" stroke-width="1">
+      <path d="M 0 100 H 360 M 0 250 H 360 M 0 400 H 360 M 0 550 H 360 M 0 700 H 360 M 0 850 H 360"/>
+      <path d="M 60 0 V 920 M 140 0 V 920 M 220 0 V 920 M 300 0 V 920"/>
+    </g>
+
+    <!-- Track Grid Perspective -->
+    <g opacity="0.3" stroke="var(--paper)" stroke-width="1.5">
+      <line x1="50" y1="920" x2="110" y2="0" stroke-width="3"/>
+      <line x1="120" y1="920" x2="135" y2="0" stroke-width="3"/>
+      <path d="M 45 900 L 125 900 M 50 840 L 126 840 M 55 780 L 127 780 M 60 720 L 128 720 M 65 660 L 129 660 M 70 600 L 130 600 M 75 540 L 131 540 M 80 480 L 132 480 M 85 420 L 133 420 M 90 360 L 134 360 M 95 300 L 134.5 300"/>
+    </g>
+
+    <!-- Radar HUD System (Slowed motion) -->
+    <g transform="translate(140, 300)">
+      <circle cx="0" cy="0" r="100" stroke="var(--amber)" stroke-width="1.5" opacity="0.25" stroke-dasharray="6 6"/>
+      <circle cx="0" cy="0" r="70" stroke="var(--paper)" stroke-width="1" opacity="0.2"/>
+      <circle cx="0" cy="0" r="40" stroke="var(--red)" stroke-width="1.5" opacity="0.4"/>
+      <circle cx="0" cy="0" r="4" fill="var(--red)" filter="url(#glowLightRed)"/>
+      
+      <!-- Rotating Radar Beam -->
+      <g class="anim-radar">
+        <polygon points="0,0 85,-50 100,-20" fill="url(#gradAmber)" opacity="0.25"/>
+        <line x1="0" y1="0" x2="95" y2="-30" stroke="var(--amber)" stroke-width="2"/>
+      </g>
+      
+      <!-- Target Nodes -->
+      <circle cx="45" cy="-35" r="4" fill="var(--red)" class="anim-pulse" filter="url(#glowLightRed)"/>
+      <text x="55" y="-32" font-family="'JetBrains Mono', monospace" font-size="10" fill="var(--red)" font-weight="bold">TARGET_01</text>
+      <circle cx="-30" cy="50" r="3.5" fill="var(--amber)" class="anim-pulse" filter="url(#glowLightAmber)"/>
+    </g>
+
+    <!-- Modern Smart Railway Signal Tower -->
+    <g transform="translate(210, 120)">
+      <rect x="35" y="80" width="20" height="600" fill="url(#gradTower)" rx="4"/>
+      <line x1="45" y1="80" x2="45" y2="680" stroke="var(--paper)" stroke-width="1" opacity="0.3"/>
+      <path d="M 35 120 L 55 160 M 35 160 L 55 120 M 35 240 L 55 280 M 35 280 L 55 240 M 35 360 L 55 400 M 35 400 L 55 360 M 35 480 L 55 520 M 35 520 L 55 480" stroke="var(--paper-dim)" stroke-width="1.5" opacity="0.4"/>
+
+      <!-- High-Tech Signal Box Top -->
+      <rect x="15" y="30" width="60" height="150" rx="12" fill="var(--steel-800)" stroke="var(--paper-dim)" stroke-width="2"/>
+      <circle cx="45" cy="65" r="18" fill="url(#gradRed)" filter="url(#glowLightRed)"/>
+      <circle cx="45" cy="65" r="8" fill="#FFF" opacity="0.8"/>
+      
+      <circle cx="45" cy="115" r="18" fill="url(#gradAmber)" filter="url(#glowLightAmber)" opacity="0.9"/>
+      <circle cx="45" cy="115" r="7" fill="#FFF" opacity="0.6"/>
+
+      <!-- Side Sensor Antenna -->
+      <path d="M 75 45 H 105 V 90 H 95" stroke="var(--paper)" stroke-width="2" fill="none" opacity="0.6"/>
+      <circle cx="105" cy="45" r="3.5" fill="var(--amber)" class="anim-pulse"/>
+    </g>
+
+    <!-- Live Telemetry Card Overlay -->
+    <g transform="translate(20, 680)">
+      <rect x="0" y="0" width="240" height="110" rx="12" fill="var(--steel-800)" stroke="var(--paper-dim)" stroke-width="1.5" opacity="0.9"/>
+      <text x="16" y="28" font-family="'JetBrains Mono', monospace" font-weight="700" font-size="11" fill="var(--red)">SIGNAL_CROSSING // SENSOR</text>
+      <circle cx="16" cy="50" r="4" fill="var(--green)"/>
+      <text x="28" y="54" font-family="'Prompt', sans-serif" font-size="11" fill="var(--paper)">ระบบเซนเซอร์: ปกติ (Active)</text>
+      <circle cx="16" cy="72" r="4" fill="var(--amber)"/>
+      <text x="28" y="76" font-family="'Prompt', sans-serif" font-size="11" fill="var(--paper)">ความถี่สัญญาณ: 5.8 GHz</text>
+      <line x1="16" y1="92" x2="224" y2="92" stroke="var(--steel-line)" stroke-width="1"/>
+      <rect x="16" y="89" width="60" height="6" rx="3" fill="var(--red)"/>
+    </g>
+  </svg>
+</div>
+<div class="rail-deco right" aria-hidden="true">
+  <svg viewBox="0 0 360 920" xmlns="http://www.w3.org/2000/svg" fill="none">
+    <defs>
+      <linearGradient id="gradTrainBody" x1="0%" y1="0%" x2="100%" y2="50%">
+        <stop offset="0%" stop-color="var(--steel-800)" />
+        <stop offset="50%" stop-color="var(--steel-700)" />
+        <stop offset="100%" stop-color="var(--steel-600)" />
+      </linearGradient>
+      <linearGradient id="gradGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#06B6D4" />
+        <stop offset="100%" stop-color="#1E3A8A" />
+      </linearGradient>
+      <linearGradient id="gradBeam" x1="100%" y1="50%" x2="0%" y2="50%">
+        <stop offset="0%" stop-color="var(--amber)" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="var(--amber)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+
+    <!-- Dynamic Speed Lines (Slowed down animation) -->
+    <g stroke="var(--amber)" opacity="0.5" stroke-width="2" class="anim-dash">
+      <path d="M 0 130 H 340 M 40 160 H 360 M 10 190 H 310 M 80 220 H 350 M 20 250 H 330"/>
+    </g>
+
+    <!-- Sleek High-Speed Bullet Train -->
+    <g transform="translate(10, 200)">
+      <polygon points="110,105 -180,210 -180,10" fill="url(#gradBeam)"/>
+      <path d="M 110,105 C 150,105 200,45 270,45 L 350,45 L 350,125 L 140,125 Z" fill="url(#gradTrainBody)" stroke="var(--paper-dim)" stroke-width="2"/>
+      <path d="M 130,95 C 150,95 185,58 225,58 L 255,58 L 220,95 Z" fill="url(#gradGlass)" stroke="#38BDF8" stroke-width="1.5"/>
+      <path d="M 270,62 H 350 V 80 H 255 Z" fill="var(--paper)" opacity="0.75"/>
+      <line x1="295" y1="62" x2="295" y2="80" stroke="var(--steel-800)" stroke-width="2"/>
+      <line x1="325" y1="62" x2="325" y2="80" stroke="var(--steel-800)" stroke-width="2"/>
+
+      <path d="M 115,108 C 170,108 230,98 350,98" stroke="var(--red)" stroke-width="3"/>
+      <path d="M 130,114 C 180,114 240,105 350,105" stroke="var(--amber)" stroke-width="2"/>
+
+      <circle cx="115" cy="105" r="7" fill="#FFF" filter="url(#glowLightAmber)"/>
+      <circle cx="115" cy="105" r="12" fill="none" stroke="var(--amber)" stroke-width="2"/>
+
+      <line x1="-20" y1="132" x2="360" y2="132" stroke="var(--paper)" stroke-width="4" opacity="0.6"/>
+      <line x1="-20" y1="138" x2="360" y2="138" stroke="var(--cyan)" stroke-width="2" stroke-dasharray="10 6" class="anim-dash"/>
+    </g>
+
+    <!-- Telemetry Graph UI Card -->
+    <g transform="translate(100, 480)">
+      <rect x="0" y="0" width="240" height="150" rx="14" fill="var(--steel-800)" stroke="var(--paper-dim)" stroke-width="1.5" opacity="0.92"/>
+      <text x="16" y="28" font-family="'JetBrains Mono', monospace" font-weight="700" font-size="11" fill="var(--amber)">SPEED & ANALYTICAL TELEMETRY</text>
+      <rect x="16" y="38" width="208" height="1" fill="var(--steel-line)"/>
+      <text x="16" y="68" font-family="'Oswald', sans-serif" font-size="28" font-weight="700" fill="var(--paper)">240 <tspan font-size="14" font-family="'Prompt'" fill="var(--paper-dim)">km/h</tspan></text>
+      <text x="140" y="64" font-family="'JetBrains Mono', monospace" font-size="10" fill="var(--green)">[ REALTIME METRICS ]</text>
+
+      <g transform="translate(16, 82)">
+        <rect x="0" y="0" width="208" height="45" rx="6" fill="var(--steel-700)"/>
+        <path d="M 5 30 Q 35 5, 65 25 T 125 15 T 175 35 T 203 10" fill="none" stroke="var(--amber)" stroke-width="2"/>
+        <path d="M 5 30 Q 35 5, 65 25 T 125 15 T 175 35 T 203 10 L 203 45 L 5 45 Z" fill="url(#gradBeam)" opacity="0.15"/>
+        <circle cx="203" cy="10" r="4" fill="var(--amber)" class="anim-pulse"/>
+      </g>
+    </g>
+
+    <!-- Bottom Decorative Circuit Grid -->
+    <g transform="translate(80, 710)" stroke="var(--paper-dim)" opacity="0.3" stroke-width="1.5">
+      <path d="M 0 0 L 40 40 H 120 L 150 70 H 220"/>
+      <circle cx="0" cy="0" r="4" fill="var(--paper)"/>
+      <circle cx="120" cy="40" r="4" fill="var(--amber)"/>
+      <circle cx="220" cy="70" r="4" fill="var(--red)"/>
+    </g>
+  </svg>
+</div>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Level crossing safety network</p>
+    <h1 data-i18n="title">ถาม-ตอบสถิติ</h1>
+    <p class="sub" data-i18n="subtitle">พิมพ์คำถามเกี่ยวกับสถิติเหตุอันตราย ระบบจะคำนวณคำตอบจากข้อมูลสดในชีตให้ทันที — ไม่ใช่ AI สนทนาทั่วไป แต่เป็นตัวคำนวณคำถามด้านสถิติโดยเฉพาะ ตอบแม่นยำจากตัวเลขจริง</p>
+  </header>
+
+  <main>
+    <div class="chips" id="quickChips">
+      <button class="chip" data-chip="q1">วันนี้มีกี่เหตุ</button>
+      <button class="chip" data-chip="q2">เดือนนี้มีกี่เหตุ</button>
+      <button class="chip" data-chip="q3">ประเภทที่พบบ่อยสุด</button>
+      <button class="chip" data-chip="q4">จังหวัดไหนเยอะสุด</button>
+      <button class="chip" data-chip="q5">เหตุล่าสุด</button>
+      <button class="chip" data-chip="q6">ทั้งหมดมีกี่เหตุ</button>
+    </div>
+
+    <div class="chat-log" id="chatLog"></div>
+  </main>
+</div>
+
+<div class="input-row">
+  <div class="input-row-inner">
+    <input type="text" id="chatInput" data-i18n-placeholder="inputPlaceholder" placeholder="พิมพ์คำถาม เช่น วันนี้มีกี่เหตุ...">
+    <button id="sendBtn" type="button" aria-label="ส่ง">➤</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* Canvas Background Particle Animation */
+  var canvas = document.getElementById('particleCanvas');
+  var ctx = canvas.getContext('2d');
+  var particles = [];
+  var particleCount = 14;
+  function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+  function Particle() { this.reset(); }
+  Particle.prototype.reset = function() {
+    this.x = Math.random() * canvas.width;
+    this.y = canvas.height + Math.random() * 100;
+    this.radius = Math.random() * 3 + 1;
+    this.speedY = Math.random() * 0.4 + 0.15;
+    this.speedX = (Math.random() - 0.5) * 0.2;
+    this.alpha = Math.random() * 0.5 + 0.2;
+    this.fade = Math.random() * 0.0015 + 0.0005;
+    this.color = Math.random() > 0.4 ? '217, 119, 6' : '220, 38, 38';
+  };
+  Particle.prototype.update = function() {
+    this.y -= this.speedY; this.x += this.speedX; this.alpha -= this.fade;
+    if (this.y < -10 || this.alpha <= 0) { this.reset(); }
+  };
+  Particle.prototype.draw = function() {
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(' + this.color + ',' + this.alpha + ')';
+    ctx.fill();
+  };
+  for (var pi = 0; pi < particleCount; pi++) {
+    var p = new Particle(); p.y = Math.random() * canvas.height; particles.push(p);
+  }
+  function animateParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (var j = 0; j < particles.length; j++) { particles[j].update(); particles[j].draw(); }
+    requestAnimationFrame(animateParticles);
+  }
+  animateParticles();
+
+  /* ---------- day/night theme toggle ---------- */
+  var THEME_KEY = 'railway-theme';
+  var toggleBtn = document.getElementById('themeToggle');
+  function applyTheme(mode){
+    if (mode === 'dark'){
+      document.documentElement.setAttribute('data-theme', 'dark');
+      toggleBtn.textContent = '🌙';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      toggleBtn.textContent = '☀️';
+    }
+  }
+  var saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+  applyTheme(saved === 'dark' ? 'dark' : 'light');
+  toggleBtn.addEventListener('click', function(){
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var next = isDark ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem(THEME_KEY, next); } catch(e){}
+  });
+
+  /* ---------- language toggle (TH / EN) ---------- */
+  var LANG_KEY = 'railway-lang';
+  var FLAG_TH = '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#A51931"/><rect y="3.33" width="30" height="13.34" fill="#F4F5F8"/><rect y="6.67" width="30" height="6.66" fill="#2D2A4A"/></svg>';
+  var FLAG_GB = '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" fill="#00247D"/><g stroke="#FFFFFF" stroke-width="4"><line x1="0" y1="0" x2="30" y2="20"/><line x1="30" y1="0" x2="0" y2="20"/></g><g stroke="#CF142B" stroke-width="1.6"><line x1="0" y1="0" x2="30" y2="20"/><line x1="30" y1="0" x2="0" y2="20"/></g><g stroke="#FFFFFF" stroke-width="6"><line x1="15" y1="0" x2="15" y2="20"/><line x1="0" y1="10" x2="30" y2="10"/></g><g stroke="#CF142B" stroke-width="3"><line x1="15" y1="0" x2="15" y2="20"/><line x1="0" y1="10" x2="30" y2="10"/></g></svg>';
+  var langToggle = document.getElementById('langToggle');
+  var currentLang = 'th';
+  var CHIP_QUESTIONS = {
+    th: {
+      q1: 'วันนี้มีกี่เหตุ', q2: 'เดือนนี้มีกี่เหตุ', q3: 'ประเภทเหตุที่พบบ่อยที่สุด',
+      q4: 'จังหวัดไหนมีเหตุมากที่สุด', q5: 'เหตุล่าสุดคือเมื่อไหร่', q6: 'ทั้งหมดมีกี่เหตุ'
+    },
+    en: {
+      q1: 'how many incidents today', q2: 'how many incidents this month', q3: 'most common incident type',
+      q4: 'which province has the most incidents', q5: 'when was the latest incident', q6: 'how many incidents in total'
+    }
+  };
+  var CHIP_LABELS = {
+    th: { q1:'วันนี้มีกี่เหตุ', q2:'เดือนนี้มีกี่เหตุ', q3:'ประเภทที่พบบ่อยสุด', q4:'จังหวัดไหนเยอะสุด', q5:'เหตุล่าสุด', q6:'ทั้งหมดมีกี่เหตุ' },
+    en: { q1:'Today', q2:'This month', q3:'Top incident type', q4:'Top province', q5:'Latest incident', q6:'Total' }
+  };
+  var I18N = {
+    th: {
+      title: 'ถาม-ตอบสถิติ',
+      subtitle: 'พิมพ์คำถามเกี่ยวกับสถิติเหตุอันตราย ระบบจะคำนวณคำตอบจากข้อมูลสดในชีตให้ทันที — ไม่ใช่ AI สนทนาทั่วไป แต่เป็นตัวคำนวณคำถามด้านสถิติโดยเฉพาะ ตอบแม่นยำจากตัวเลขจริง',
+      inputPlaceholder: 'พิมพ์คำถาม เช่น วันนี้มีกี่เหตุ...',
+      greeting: 'สวัสดีครับ ผมช่วยตอบคำถามเกี่ยวกับสถิติเหตุอันตรายจากข้อมูลสดในระบบได้ ลองถามได้เลย หรือกดปุ่มคำถามด่วนด้านบนก็ได้ครับ',
+      thinking: 'กำลังคำนวณ...',
+      notLoaded: 'ยังโหลดข้อมูลไม่เสร็จ รอสักครู่แล้วลองถามใหม่นะครับ',
+      emptyInput: 'พิมพ์คำถามก่อนนะครับ เช่น "วันนี้มีกี่เหตุ"',
+      noIncidentsAtAll: 'ยังไม่มีข้อมูลเหตุการณ์ในระบบเลยครับ',
+      noneInRange: 'ไม่พบข้อมูลเหตุในช่วง',
+      rangeToday: 'วันนี้', rangeYesterday: 'เมื่อวาน', range7d: '7 วันที่ผ่านมา', range30d: '30 วันที่ผ่านมา',
+      rangeAll: 'ทั้งหมดที่มีการบันทึกไว้', rangeUnspec: 'ทั้งหมดที่มีการบันทึกไว้ (ไม่ได้ระบุช่วงเวลา)',
+      geoNotReady: 'ระบบยังโหลดข้อมูลแผนที่จังหวัดไม่เสร็จ ลองใหม่อีกครั้งครับ',
+      noProvinceData: 'ยังไม่มีเหตุที่ระบุตำแหน่ง GPS ไว้เลยครับ เลยยังบอกจังหวัดไม่ได้',
+      fallback: 'ขออภัยครับ ยังไม่เข้าใจคำถามนี้ ลองถามในรูปแบบเช่น:\n• "วันนี้มีกี่เหตุ"\n• "เดือนนี้มีกี่เหตุ"\n• "ประเภทเหตุที่พบบ่อยที่สุด"\n• "จังหวัดไหนมีเหตุมากที่สุด"\n• "จุดตัดไหนมีเหตุมากที่สุด"\n• "เหตุล่าสุดคือเมื่อไหร่"\n• "เครื่องกั้นชำรุดกี่ครั้ง"',
+      locale: 'th-TH'
+    },
+    en: {
+      title: 'Statistics Q&A',
+      subtitle: 'Type a question about hazard statistics — the system computes a real answer from the live sheet data instantly. This is not a general-purpose AI chatbot, but a stats-specific calculator that answers accurately from real numbers.',
+      inputPlaceholder: 'Type a question, e.g. how many incidents today...',
+      greeting: "Hi! I can answer questions about hazard statistics using the system's live data. Ask away, or tap one of the quick questions above.",
+      thinking: 'Calculating...',
+      notLoaded: 'Still loading data — wait a moment and ask again.',
+      emptyInput: 'Type a question first, e.g. "how many incidents today"',
+      noIncidentsAtAll: "There's no incident data in the system yet.",
+      noneInRange: 'No incidents found in ',
+      rangeToday: 'today', rangeYesterday: 'yesterday', range7d: 'the last 7 days', range30d: 'the last 30 days',
+      rangeAll: 'all recorded data', rangeUnspec: 'all recorded data (no time range specified)',
+      geoNotReady: 'The province map data is still loading — please try again.',
+      noProvinceData: "No incidents have a GPS location yet, so I can't tell provinces apart.",
+      fallback: 'Sorry, I didn\'t understand that question. Try something like:\n• "how many incidents today"\n• "how many incidents this month"\n• "most common incident type"\n• "which province has the most incidents"\n• "which crossing has the most incidents"\n• "when was the latest incident"\n• "how many gate malfunctions"',
+      locale: 'en-GB'
+    }
+  };
+  function t(key){ return (I18N[currentLang] && I18N[currentLang][key]) || key; }
+
+  function applyLang(lang){
+    currentLang = (lang === 'en') ? 'en' : 'th';
+    document.documentElement.setAttribute('lang', currentLang);
+    langToggle.innerHTML = currentLang === 'en' ? FLAG_GB : FLAG_TH;
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+      el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){
+      el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder')));
+    });
+    document.querySelectorAll('.chip').forEach(function(chip){
+      var key = chip.getAttribute('data-chip');
+      chip.textContent = CHIP_LABELS[currentLang][key];
+    });
+  }
+  var savedLang = null;
+  try { savedLang = localStorage.getItem(LANG_KEY); } catch(e){}
+  applyLang(savedLang === 'en' ? 'en' : 'th');
+  langToggle.addEventListener('click', function(){
+    var next = currentLang === 'en' ? 'th' : 'en';
+    applyLang(next);
+    try { localStorage.setItem(LANG_KEY, next); } catch(e){}
+  });
+
+  /* ---------- floating train nav ---------- */
+  (function(){
+    var trainBtn = document.getElementById('trainNavBtn');
+    var trainMenu = document.getElementById('trainMenu');
+    trainBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      trainMenu.classList.toggle('open');
+    });
+    document.addEventListener('click', function(e){
+      if (!trainMenu.contains(e.target) && e.target !== trainBtn) trainMenu.classList.remove('open');
+    });
+    var link = trainMenu.querySelector('[data-page="assistant"]');
+    if (link) link.classList.add('current');
+  })();
+
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzq_lB981Yq4JZKKMMy5olDkf3xIaJgoZODZrWs7PwGB0r0t7YvtPQEmNVfxHCa9rb85g/exec';
+  var GEOJSON_URL = 'https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json';
+
+  var incidents = [];
+  var geoData = null;
+
+  function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z]/g,''); }
+
+  function fuzzyMatchProvince(key, lookup){
+    if (lookup[key]) return lookup[key];
+    var best = null, bestLen = 0;
+    for (var k in lookup){
+      if (k.length < 4) continue;
+      if (key.indexOf(k) !== -1 || k.indexOf(key) !== -1){
+        if (k.length > bestLen){ bestLen = k.length; best = lookup[k]; }
+      }
+    }
+    return best;
+  }
+
+  // English-name-key -> {th, region}
+  var RAW_PROVINCES = [
+    ['Bangkok','กรุงเทพมหานคร','central',['krungthep','krungthepmahanakhon','bangkokmetropolis','bangkokmetropolitanarea','krungthepmahanakhonmetropolis']],
+    ['Nonthaburi','นนทบุรี','central'],
+    ['Pathum Thani','ปทุมธานี','central'],
+    ['Samut Prakan','สมุทรปราการ','central'],
+    ['Nakhon Pathom','นครปฐม','central'],
+    ['Samut Sakhon','สมุทรสาคร','central'],
+    ['Samut Songkhram','สมุทรสงคราม','central'],
+    ['Phra Nakhon Si Ayutthaya','พระนครศรีอยุธยา','central',['ayutthaya']],
+    ['Ang Thong','อ่างทอง','central'],
+    ['Suphan Buri','สุพรรณบุรี','central',['suphanburi']],
+    ['Lop Buri','ลพบุรี','central',['lopburi']],
+    ['Saraburi','สระบุรี','central'],
+    ['Sing Buri','สิงห์บุรี','central',['singburi']],
+    ['Chai Nat','ชัยนาท','central',['chainat']],
+    ['Nakhon Nayok','นครนายก','central'],
+    ['Chon Buri','ชลบุรี','east',['chonburi']],
+    ['Rayong','ระยอง','east'],
+    ['Chanthaburi','จันทบุรี','east'],
+    ['Trat','ตราด','east'],
+    ['Chachoengsao','ฉะเชิงเทรา','east'],
+    ['Prachin Buri','ปราจีนบุรี','east',['prachinburi']],
+    ['Sa Kaeo','สระแก้ว','east',['sakaeo','sakeo']],
+    ['Kanchanaburi','กาญจนบุรี','west'],
+    ['Ratchaburi','ราชบุรี','west'],
+    ['Phetchaburi','เพชรบุรี','west'],
+    ['Prachuap Khiri Khan','ประจวบคีรีขันธ์','west',['prachuap']],
+    ['Chiang Mai','เชียงใหม่','north'],
+    ['Chiang Rai','เชียงราย','north'],
+    ['Lamphun','ลำพูน','north'],
+    ['Lampang','ลำปาง','north'],
+    ['Phrae','แพร่','north'],
+    ['Nan','น่าน','north'],
+    ['Phayao','พะเยา','north'],
+    ['Mae Hong Son','แม่ฮ่องสอน','north'],
+    ['Uttaradit','อุตรดิตถ์','north'],
+    ['Sukhothai','สุโขทัย','north'],
+    ['Tak','ตาก','north'],
+    ['Kamphaeng Phet','กำแพงเพชร','north'],
+    ['Phichit','พิจิตร','north'],
+    ['Phitsanulok','พิษณุโลก','north'],
+    ['Phetchabun','เพชรบูรณ์','north'],
+    ['Nakhon Sawan','นครสวรรค์','north'],
+    ['Uthai Thani','อุทัยธานี','north'],
+    ['Nakhon Ratchasima','นครราชสีมา','northeast'],
+    ['Buri Ram','บุรีรัมย์','northeast',['buriram']],
+    ['Surin','สุรินทร์','northeast'],
+    ['Si Sa Ket','ศรีสะเกษ','northeast',['sisaket','srisaket']],
+    ['Ubon Ratchathani','อุบลราชธานี','northeast'],
+    ['Yasothon','ยโสธร','northeast'],
+    ['Chaiyaphum','ชัยภูมิ','northeast'],
+    ['Amnat Charoen','อำนาจเจริญ','northeast'],
+    ['Nong Bua Lam Phu','หนองบัวลำภู','northeast',['nongbualamphu','nongbualumphu']],
+    ['Khon Kaen','ขอนแก่น','northeast'],
+    ['Udon Thani','อุดรธานี','northeast'],
+    ['Loei','เลย','northeast'],
+    ['Nong Khai','หนองคาย','northeast'],
+    ['Maha Sarakham','มหาสารคาม','northeast'],
+    ['Roi Et','ร้อยเอ็ด','northeast'],
+    ['Kalasin','กาฬสินธุ์','northeast'],
+    ['Sakon Nakhon','สกลนคร','northeast'],
+    ['Nakhon Phanom','นครพนม','northeast'],
+    ['Mukdahan','มุกดาหาร','northeast'],
+    ['Bueng Kan','บึงกาฬ','northeast',['buengkan','buogkan']],
+    ['Chumphon','ชุมพร','south'],
+    ['Ranong','ระนอง','south'],
+    ['Surat Thani','สุราษฎร์ธานี','south'],
+    ['Phang Nga','พังงา','south'],
+    ['Phuket','ภูเก็ต','south'],
+    ['Krabi','กระบี่','south'],
+    ['Nakhon Si Thammarat','นครศรีธรรมราช','south'],
+    ['Trang','ตรัง','south'],
+    ['Phatthalung','พัทลุง','south'],
+    ['Satun','สตูล','south'],
+    ['Songkhla','สงขลา','south'],
+    ['Pattani','ปัตตานี','south'],
+    ['Yala','ยะลา','south'],
+    ['Narathiwat','นราธิวาส','south']
+  ];
+
+  var PROVINCE_LOOKUP = {};
+  RAW_PROVINCES.forEach(function(row){
+    var en = row[0], th = row[1], region = row[2], aliases = row[3] || [];
+    var entry = {en: en, th: th, region: region};
+    PROVINCE_LOOKUP[norm(en)] = entry;
+    aliases.forEach(function(a){ PROVINCE_LOOKUP[norm(a)] = entry; });
+  });
+
+  var incidents = [];
+  var geoData = null;
+  var geoLoadFailed = false;
+  var provinceCounts = {}; // th name -> filtered incidents array
+  var currentRange = '7d';
+  var currentRegion = 'all';
+
+  function toDriveThumb(url){
+    if (!url) return url;
+    var m = /[?&]id=([^&]+)/.exec(url);
+    return m ? ('https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w1000') : url;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  /* ---------- point in polygon ---------- */
+  function pointInRing(pt, ring){
+    var x = pt[0], y = pt[1], inside = false;
+    for (var i=0,j=ring.length-1; i<ring.length; j=i++){
+      var xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
+      var intersect = ((yi>y) !== (yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+  function pointInPolygon(pt, poly){
+    if (!pointInRing(pt, poly[0])) return false;
+    for (var k=1;k<poly.length;k++){ if (pointInRing(pt, poly[k])) return false; }
+    return true;
+  }
+  function pointInGeometry(pt, geom){
+    if (!geom) return false;
+    if (geom.type === 'Polygon') return pointInPolygon(pt, geom.coordinates);
+    if (geom.type === 'MultiPolygon') return geom.coordinates.some(function(p){ return pointInPolygon(pt, p); });
+    return false;
+  }
+
+  /* ---------- data loading ---------- */
+  async function loadIncidents(){
+    try{
+      var resp = await fetch(SCRIPT_URL, { method:'GET' });
+      var data = await resp.json();
+      incidents = Array.isArray(data) ? data : [];
+    }catch(e){ incidents = []; }
+  }
+
+  async function loadGeo(){
+    try{
+      var resp = await fetch(GEOJSON_URL);
+      geoData = await resp.json();
+      geoData.features.forEach(function(f){
+        var key = norm(f.properties && f.properties.name);
+        var match = fuzzyMatchProvince(key, PROVINCE_LOOKUP);
+        f.properties._th = match ? match.th : (f.properties.name || 'ไม่ทราบชื่อ');
+        f.properties._region = match ? match.region : 'central';
+      });
+    }catch(e){
+      geoLoadFailed = true;
+    }
+  }
+
+  function assignProvince(incident){
+    if (incident._province !== undefined) return incident._province;
+    var gps = incident.gps;
+    if (!gps || typeof gps !== 'string' || gps.indexOf(',') === -1){ incident._province = null; return null; }
+    var parts = gps.split(',');
+    var lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
+    if (isNaN(lat) || isNaN(lng)){ incident._province = null; return null; }
+    incident._lat = lat; incident._lng = lng;
+    if (!geoData){ incident._province = null; return null; }
+    var pt = [lng, lat];
+    for (var i=0;i<geoData.features.length;i++){
+      var f = geoData.features[i];
+      if (pointInGeometry(pt, f.geometry)){
+        incident._province = f.properties._th;
+        incident._region = f.properties._region;
+        return incident._province;
+      }
+    }
+    incident._province = null;
+    return null;
+  }
+
+  var geoLoadFailed = false;
+
+  /* ==================================================================
+     QUERY ENGINE — parses Thai questions and computes real answers
+     ================================================================== */
+  function withinRange(ts, rangeKey){
+    var d = new Date(ts), now = new Date();
+    if (isNaN(d.getTime())) return false;
+    if (rangeKey === 'today'){
+      return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && d.getDate()===now.getDate();
+    }
+    if (rangeKey === 'yesterday'){
+      var y = new Date(now); y.setDate(y.getDate()-1);
+      return d.getFullYear()===y.getFullYear() && d.getMonth()===y.getMonth() && d.getDate()===y.getDate();
+    }
+    if (rangeKey === '7d') return (now - d) <= 7*86400000;
+    if (rangeKey === '30d') return (now - d) <= 30*86400000;
+    return true;
+  }
+
+  function detectRange(q){
+    if (/เมื่อวาน|yesterday/i.test(q)) return {key:'yesterday', label:t('rangeYesterday')};
+    if (/วันนี้|today/i.test(q)) return {key:'today', label:t('rangeToday')};
+    if (/สัปดาห์นี้|7\s*วัน|เจ็ดวัน|7\s*days?|this week|last week/i.test(q)) return {key:'7d', label:t('range7d')};
+    if (/เดือนนี้|30\s*วัน|30\s*days?|this month/i.test(q)) return {key:'30d', label:t('range30d')};
+    if (/ทั้งหมด|ทุกวัน|รวมทั้งหมด|all time|in total|altogether/i.test(q)) return {key:'all', label:t('rangeAll')};
+    return {key:'all', label:t('rangeUnspec')};
+  }
+
+  function countBy(arr, keyFn){
+    var counts = {};
+    arr.forEach(function(i){
+      var k = keyFn(i);
+      if (!k) return;
+      counts[k] = (counts[k] || 0) + 1;
+    });
+    return Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; });
+  }
+
+  function fmtDateTime(ts){
+    var d = new Date(ts);
+    if (isNaN(d.getTime())) return '-';
+    var timeWord = currentLang === 'en' ? ' at ' : ' เวลา ';
+    return d.toLocaleDateString(t('locale'),{day:'2-digit',month:'2-digit',year:'numeric'}) + timeWord +
+      d.toLocaleTimeString(t('locale'),{hour:'2-digit',minute:'2-digit'});
+  }
+
+  var TYPE_TRANSLATE = {
+    'เครื่องกั้นไม่ลง': 'Gate not lowering',
+    'เครื่องกั้นชำรุด': 'Gate malfunction',
+    'สัญญาณไฟ-เสียงไม่ทำงาน': 'Lights/alarm not working',
+    'รถติดในราง': 'Vehicle stuck on tracks',
+    'คนหรือสัตว์ในราง': 'Person/animal on tracks',
+    'อื่นๆ': 'Other'
+  };
+  function typeLabel(thType){
+    if (currentLang === 'en') return TYPE_TRANSLATE[thType] || thType || 'Unspecified';
+    return thType || 'ไม่ระบุประเภท';
+  }
+  function timesWord(n){ return currentLang === 'en' ? (n===1 ? ' time' : ' times') : ' ครั้ง'; }
+
+  async function answerQuestion(rawQ){
+    var q = rawQ.trim();
+    if (!q) return t('emptyInput');
+
+    if (!incidents.length && !geoData){
+      return t('notLoaded');
+    }
+
+    var range = detectRange(q);
+    var filtered = incidents.filter(function(i){ return withinRange(i.timestamp, range.key); });
+    var inRangeWord = currentLang === 'en' ? ('in ' + range.label) : ('ในช่วง' + range.label);
+    var noneInRangeMsg = currentLang === 'en' ? (t('noneInRange') + range.label + '.') : (t('noneInRange') + range.label + 'เลยครับ');
+
+    // "latest"
+    if (/ล่าสุด|latest|most recent/i.test(q)){
+      if (!incidents.length) return t('noIncidentsAtAll');
+      var sorted = incidents.slice().sort(function(a,b){ return new Date(b.timestamp)-new Date(a.timestamp); });
+      var latest = sorted[0];
+      if (currentLang === 'en'){
+        return 'The latest reported incident is "' + typeLabel(latest.type) + '" at crossing ' +
+          (latest.crossingId || '-') + ' on ' + fmtDateTime(latest.timestamp) +
+          (latest.note ? ('\nDetails: ' + latest.note) : '');
+      }
+      return 'เหตุล่าสุดที่แจ้งเข้ามาคือ "' + typeLabel(latest.type) + '" ที่จุดตัด ' +
+        (latest.crossingId || '-') + ' เมื่อ ' + fmtDateTime(latest.timestamp) +
+        (latest.note ? ('\nรายละเอียด: ' + latest.note) : '');
+    }
+
+    // most common incident type
+    if (/ประเภท.*(บ่อย|มาก|เยอะ)|(บ่อย|มาก|เยอะ).*ประเภท|most common.*type|common(est)? incident type|type.*most/i.test(q)){
+      var byType = countBy(filtered, function(i){ return i.type; });
+      if (!byType.length) return noneInRangeMsg;
+      var topType = byType[0];
+      if (currentLang === 'en'){
+        var typeLinesEn = byType.slice(0,5).map(function(p){ return '• ' + typeLabel(p[0]) + ': ' + p[1] + timesWord(p[1]); }).join('\n');
+        return 'The most common incident type ' + inRangeWord + ' is "' + typeLabel(topType[0]) + '" (' + topType[1] + timesWord(topType[1]) + ')\n\nFull ranking:\n' + typeLinesEn;
+      }
+      var typeLines = byType.slice(0,5).map(function(p){ return '• ' + p[0] + ': ' + p[1] + ' ครั้ง'; }).join('\n');
+      return 'ในช่วง' + range.label + ' ประเภทเหตุที่พบบ่อยที่สุดคือ "' + topType[0] + '" (' + topType[1] + ' ครั้ง)\n\nอันดับทั้งหมด:\n' + typeLines;
+    }
+
+    // which province has the most incidents
+    if (/จังหวัด.*(บ่อย|มาก|เยอะ)|(บ่อย|มาก|เยอะ).*จังหวัด|province.*most|most.*province/i.test(q)){
+      if (!geoData) return t('geoNotReady');
+      filtered.forEach(function(i){ assignProvince(i); });
+      var withProvince = filtered.filter(function(i){ return i._province; });
+      var byProvince = countBy(withProvince, function(i){ return i._province; });
+      if (!byProvince.length) return (currentLang === 'en' ? (t('noneInRange') + range.label + ' — ' + t('noProvinceData')) : ('ในช่วง' + range.label + ' ' + t('noProvinceData')));
+      var topProv = byProvince[0];
+      if (currentLang === 'en'){
+        var provLinesEn = byProvince.slice(0,5).map(function(p){ return '• ' + p[0] + ': ' + p[1] + timesWord(p[1]); }).join('\n');
+        return 'The province with the most incidents ' + inRangeWord + ' is "' + topProv[0] + '" (' + topProv[1] + timesWord(topProv[1]) + ')\n\nFull ranking:\n' + provLinesEn;
+      }
+      var provLines = byProvince.slice(0,5).map(function(p){ return '• ' + p[0] + ': ' + p[1] + ' ครั้ง'; }).join('\n');
+      return 'ในช่วง' + range.label + ' จังหวัดที่มีเหตุมากที่สุดคือ "' + topProv[0] + '" (' + topProv[1] + ' ครั้ง)\n\nอันดับทั้งหมด:\n' + provLines;
+    }
+
+    // which crossing has the most incidents
+    if (/จุด(ตัด)?.*(บ่อย|มาก|เยอะ)|(บ่อย|มาก|เยอะ).*จุด(ตัด)?|crossing.*most|most.*crossing/i.test(q)){
+      var byCrossing = countBy(filtered, function(i){ return i.crossingId; });
+      if (!byCrossing.length) return noneInRangeMsg;
+      var topCrossing = byCrossing[0];
+      if (currentLang === 'en'){
+        var crossingLinesEn = byCrossing.slice(0,5).map(function(p){ return '• ' + p[0] + ': ' + p[1] + timesWord(p[1]); }).join('\n');
+        return 'The crossing with the most incidents ' + inRangeWord + ' is "' + topCrossing[0] + '" (' + topCrossing[1] + timesWord(topCrossing[1]) + ')\n\nFull ranking:\n' + crossingLinesEn;
+      }
+      var crossingLines = byCrossing.slice(0,5).map(function(p){ return '• ' + p[0] + ': ' + p[1] + ' ครั้ง'; }).join('\n');
+      return 'ในช่วง' + range.label + ' จุดตัดที่มีเหตุมากที่สุดคือ "' + topCrossing[0] + '" (' + topCrossing[1] + ' ครั้ง)\n\nอันดับทั้งหมด:\n' + crossingLines;
+    }
+
+    // specific incident type count (e.g. "เครื่องกั้นชำรุดกี่ครั้ง" / "how many gate malfunctions")
+    var knownTypes = ['เครื่องกั้นไม่ลง','เครื่องกั้นชำรุด','สัญญาณไฟ-เสียงไม่ทำงาน','สัญญาณไฟ','รถติดในราง','คนหรือสัตว์ในราง','คน/สัตว์'];
+    for (var ti=0; ti<knownTypes.length; ti++){
+      var thTerm = knownTypes[ti];
+      var enTerm = TYPE_TRANSLATE[thTerm];
+      var matched = q.indexOf(thTerm) !== -1 || (enTerm && q.toLowerCase().indexOf(enTerm.toLowerCase()) !== -1);
+      if (matched){
+        var matchType = filtered.filter(function(i){ return (i.type||'').indexOf(thTerm.split('-')[0].slice(0,4)) !== -1 || i.type === thTerm; });
+        if (currentLang === 'en'){
+          return 'There ' + (matchType.length===1?'was':'were') + ' ' + matchType.length + ' "' + (enTerm||thTerm) + '" incident' + (matchType.length===1?'':'s') + ' reported ' + inRangeWord + '.';
+        }
+        return 'ในช่วง' + range.label + ' เหตุประเภท "' + thTerm + '" มีการแจ้งเข้ามา ' + matchType.length + ' ครั้งครับ';
+      }
+    }
+
+    // generic count (กี่เหตุ / จำนวน / เท่าไหร่ / ทั้งหมด / how many)
+    if (/กี่เหตุ|กี่ครั้ง|จำนวนเหตุ|เหตุเท่าไหร่|มีเหตุ|ทั้งหมดมี|how many|total (number|count)/i.test(q)){
+      if (currentLang === 'en'){
+        return 'There ' + (filtered.length===1?'was':'were') + ' a total of ' + filtered.length + ' incident' + (filtered.length===1?'':'s') + ' reported ' + inRangeWord + '.';
+      }
+      return 'ในช่วง' + range.label + ' มีเหตุที่แจ้งเข้ามาทั้งหมด ' + filtered.length + ' ครั้งครับ';
+    }
+
+    return t('fallback');
+  }
+
+  /* ---------- chat UI wiring ---------- */
+  var chatLog = document.getElementById('chatLog');
+  var chatInput = document.getElementById('chatInput');
+  var sendBtn = document.getElementById('sendBtn');
+
+  function addMsg(text, who){
+    var row = document.createElement('div');
+    row.className = 'msg ' + who;
+    var bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    row.appendChild(bubble);
+    chatLog.appendChild(row);
+    window.scrollTo(0, document.body.scrollHeight);
+    return bubble;
+  }
+
+  async function handleSend(qText){
+    var q = (qText !== undefined ? qText : chatInput.value).trim();
+    if (!q) return;
+    addMsg(q, 'user');
+    chatInput.value = '';
+    var loadingBubble = addMsg(t('thinking'), 'bot');
+    var answer = await answerQuestion(q);
+    loadingBubble.textContent = answer;
+    window.scrollTo(0, document.body.scrollHeight);
+  }
+
+  sendBtn.addEventListener('click', function(){ handleSend(); });
+  chatInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') handleSend(); });
+
+  document.querySelectorAll('.chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      var key = chip.getAttribute('data-chip');
+      handleSend(CHIP_QUESTIONS[currentLang][key]);
+    });
+  });
+
+  addMsg(t('greeting'), 'bot');
+
+  (async function init(){
+    await Promise.all([loadIncidents(), loadGeo()]);
+  })();
+})();
+</script>
+</body>
+</html>
